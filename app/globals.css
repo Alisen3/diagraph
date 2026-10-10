@@ -188,6 +188,10 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
 .block .label + .body { margin-top: 0; }
 .block .pill { margin-top: var(--spacing-18); }
 .quote { margin-top: var(--spacing-18); font-size: var(--text-heading-2xs); font-weight: 200; line-height: 1.45; }
+.note { color: var(--color-ash-gray); font-size: var(--text-caption); font-weight: 400; }
+.sources { margin-top: var(--spacing-24); display: grid; gap: var(--spacing-12); }
+.sources dt { font-weight: 400; }
+.sources dd { color: var(--color-silver-mist); font-size: 15px; }
 .columns { display: grid; gap: var(--spacing-60); max-width: 600px; }
 .team-section { padding-block: var(--spacing-120); }
 .closing { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: var(--spacing-60); }
@@ -299,6 +303,8 @@ main { overflow-x: clip; }
 .plan ol { margin-top: var(--spacing-18); display: grid; gap: var(--spacing-18); }
 .plan time { display: block; font-weight: 400; }
 .plan span { display: block; color: var(--color-silver-mist); font-size: 15px; }
+.plan em { display: block; margin-top: 2px; font-style: normal; color: var(--color-ash-gray); font-size: var(--text-caption); font-weight: 400; }
+.plan .now time { color: var(--color-saffron-spark); }
 
 .foot { padding-bottom: var(--spacing-60); display: flex; justify-content: space-between; gap: var(--spacing-24); flex-wrap: wrap; color: var(--color-ash-gray); font-size: var(--text-caption); font-weight: 400; }
 .foot p { max-width: 70ch; }

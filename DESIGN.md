@@ -70,7 +70,7 @@ Bölümler sırasıyla:
 | Bölüm | `data-scene` | Yerleşim |
 |---|---|---|
 | Hero | `hero` | Solda dev başlık, sağda beyin |
-| Medical knowledge you can follow | `intro` | Metin solda |
+| Records are scattered (problem) | `intro` | Metin solda |
 | Understand your own record | `patients` | Metin sağda |
 | Reason with evidence | `clinicians` | Metin solda |
 | Timing carries diagnostic information | `case` | Metin sağda, altta etkileşimli vaka |
@@ -79,7 +79,7 @@ Bölümler sırasıyla:
 | Measured, not assumed | `measure` | Metin solda, altta metrik ızgarası |
 | Two semesters | `plan` | Metin sağda |
 | Our team | `team` | Ekip karuseli |
-| Kapanış | `closing` | Hero başlığının tekrarı |
+| Kapanış | `closing` | "One record, two views." ve GitHub bağlantısı |
 
 **Yerleşim kuralları:**
 - **Zikzak:** Uzun bölümlerde (`.tall`, en az 120svh) metin bloğu (`.block`) bir solda bir sağda (`.block.right`) durur. Parçacık şekli her zaman metnin karşı tarafına yerleşir.

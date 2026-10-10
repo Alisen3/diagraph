@@ -10,3 +10,9 @@ npm run dev   # http://localhost:3000
 ```
 
 Deployed on Vercel from the `main` branch.
+
+## Team
+Ali Şen, Asya Ünal, Bilgehan Akın, Bora Balcı, Elif Su Temirel
+
+Supervisor: Professor Cevdet Aykanat
+Innovation Expert: Can Koyuncu, PhD

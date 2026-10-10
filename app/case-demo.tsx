@@ -131,7 +131,7 @@ export default function CaseDemo() {
             })}
             {DISEASES.map((d) => (
               <g key={d.id} className={`node dx ${d.id === ranked[0].id ? "lead" : ""}`}>
-                <rect x={DX} y={d.y - 17} width={180} height={34} rx={6} />
+                <rect x={DX} y={d.y - 17} width={180} height={34} rx={17} />
                 <text x={DX + 90} y={d.y + 5}>{d.label}</text>
               </g>
             ))}
@@ -169,7 +169,7 @@ export default function CaseDemo() {
         <button type="button" className="btn primary" onClick={() => setCount(count + 1)} disabled={count === STEPS.length}>
           {count === STEPS.length ? "All findings added" : "Add the next finding"}
         </button>
-        <button type="button" className="btn" onClick={() => setCount(1)} disabled={count === 1}>
+        <button type="button" className="ghost" onClick={() => setCount(1)} disabled={count === 1}>
           Start over
         </button>
         <span className="case-note">Synthetic case with illustrative numbers. Finding {count} of {STEPS.length}.</span>

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Atkinson_Hyperlegible_Next } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const atkinson = Atkinson_Hyperlegible_Next({
+// Substitute for PP Neue Montreal, as the design system recommends.
+const inter = Inter({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-atkinson",
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={atkinson.variable}>
+    <html lang="en" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

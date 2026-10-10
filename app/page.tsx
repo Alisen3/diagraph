@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import ParticleScene from "./particle-scene";
 import CaseDemo from "./case-demo";
-import { Preloader, RevealObserver, TeamCarousel, ThemeToggle } from "./motion";
+import { RevealObserver, TeamCarousel, ThemeToggle } from "./motion";
 
 const PIPELINE = [
   ["Ingest records", "FHIR resources from synthetic Synthea patients, clinical notes and uploaded reports."],
@@ -84,7 +84,6 @@ function Logo() {
 export default function Home() {
   return (
     <>
-      <Preloader />
       <ParticleScene />
       <RevealObserver />
 

@@ -3,37 +3,6 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-/** Counts 0 to 100 while the scene spins up, then lifts away and lets the hero text in. */
-export function Preloader() {
-  const [n, setN] = useState(0);
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    const quick = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const start = performance.now();
-    const length = quick ? 200 : 1600;
-    let raf = 0;
-    const step = (now: number) => {
-      const p = Math.min(1, (now - start) / length);
-      setN(Math.round((1 - (1 - p) ** 3) * 100));
-      if (p < 1) raf = requestAnimationFrame(step);
-      else {
-        document.documentElement.classList.add("loaded");
-        setTimeout(() => setDone(true), 200);
-      }
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  return (
-    <div className={`preloader${done ? " done" : ""}`} aria-hidden="true">
-      <span className="label">Loading</span>
-      <span className="count">{n}</span>
-    </div>
-  );
-}
-
 /** Adds .in to every .reveal element as it scrolls into view. */
 export function RevealObserver() {
   useEffect(() => {

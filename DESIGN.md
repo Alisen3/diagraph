@@ -102,21 +102,15 @@ Bölümler sırasıyla:
 
 ## 5. Animasyonlar
 
-### 5.1 Yükleyici (`Preloader`, `app/motion.tsx`)
-
-- Sayaç 1.6 saniyede 0'dan 100'e sayar (ease-out cubic). "Hareketi azalt" açıksa bu süre 0.2 saniyedir.
-- Sayaç bitince `<html>` öğesine `loaded` sınıfı eklenir ve perde yukarı kayar: `transform: translateY(-100%)`, 1 saniye, `cubic-bezier(0.76, 0, 0.24, 1)`.
-- JavaScript takılırsa CSS animasyonu perdeyi 4 saniye sonra kendiliğinden gizler, kullanıcı kilitli kalmaz.
-
-### 5.2 Kelime kelime belirme (`Words`, `RevealObserver`)
+### 5.1 Kelime kelime belirme (`Words`, `RevealObserver`)
 
 - **Bölme:** Başlıklar `Words` bileşeniyle kelimelere bölünür. Her kelime `overflow: hidden` bir maske içindedir ve iç `span` aşağıdan (`translateY(105%)`) yukarı kayar.
 - **Zamanlama:** 1.1 saniye, `cubic-bezier(0.16, 1, 0.3, 1)`. Her kelimede 45ms gecikme artar (`--i` CSS değişkeni).
 - **Tetikleme:** `RevealObserver`, `.reveal` sınıflı öğeleri `IntersectionObserver` ile izler (eşik 0.15) ve görünür olunca `.in` ekler. Paragraflar ve `.fade` öğeler 24px aşağıdan solarak gelir.
-- **Hero:** Hero başlığı yükleyici bitene kadar bekler (`.js.loaded` koşulu).
+- **Hero:** Yükleme ekranı yok; hero başlığı sayfa açılır açılmaz kelime kelime gelir, "Scroll to explore" 1 saniye sonra belirir.
 - **JavaScript olmadan:** Gizleme sadece `<html class="js">` varsa uygulanır, yani JavaScript yoksa içerik görünür kalır.
 
-### 5.3 Parçacık sahnesi (`app/particle-scene.tsx`)
+### 5.2 Parçacık sahnesi (`app/particle-scene.tsx`)
 
 Tüm sayfanın arkasında `position: fixed` bir WebGL tuvali var (`.brain-scene`, z-index 0, `pointer-events: none`). İçerik ondan önce gelir (z-index 1).
 
@@ -220,7 +214,7 @@ anında günceller.
 - Şekiller dağılmaz, sadece kaydırdıkça soluklaşır.
 - Sahne sürekli değil, sadece kaydırma ve tema değişiminde yeniden çizilir.
 
-### 5.4 Tema
+### 5.3 Tema
 
 - Sayfa çizilmeden önce `<head>` içindeki küçük bir betik (`THEME_SCRIPT`, `app/layout.tsx`) kayıtlı temayı ya da sistem temasını `<html data-theme>` olarak ayarlar. Bu sayede açılışta yanlış temada yanıp sönme olmaz.
 - Tema butonu (`ThemeToggle`) seçimi `localStorage` içinde saklar.
@@ -233,7 +227,7 @@ anında günceller.
 | `app/page.tsx` | Bölümler, metinler, `data-scene` işaretleri, ekip listesi |
 | `app/globals.css` | Token'lar, tema, yerleşim ve tüm stiller |
 | `app/particle-scene.tsx` | Three.js sahnesi: şekiller, shader, kaydırma koreografisi, etiketler |
-| `app/motion.tsx` | Yükleyici, belirme gözlemcisi, ekip karuseli, tema butonu |
+| `app/motion.tsx` | Belirme gözlemcisi, ekip karuseli, tema butonu |
 | `app/case-demo.tsx` | Etkileşimli apandisit vakası |
 | `public/team/` | Ekip fotoğrafları |
 

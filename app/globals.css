@@ -127,17 +127,6 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
 .ghost:hover:not(:disabled) { color: var(--color-bone-white); }
 .ghost:disabled { opacity: 0.4; cursor: default; }
 
-/* preloader */
-.preloader {
-  position: fixed; inset: 0; z-index: 50; background: var(--color-void);
-  display: flex; align-items: flex-end; justify-content: space-between; padding: var(--spacing-36);
-  transition: transform 1s cubic-bezier(0.76, 0, 0.24, 1);
-  animation: preloader-fallback 0s 4s forwards; /* never trap the page if JS stalls */
-}
-.preloader.done { transform: translateY(-100%); }
-@keyframes preloader-fallback { to { visibility: hidden; } }
-.preloader .count { font-size: clamp(64px, 12vw, 160px); font-weight: 400; letter-spacing: -0.04em; line-height: 0.85; font-variant-numeric: tabular-nums; }
-
 /* 3D scene sits behind everything */
 .brain-scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 .brain-scene canvas { display: block; width: 100%; height: 100%; }
@@ -163,12 +152,9 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
 .w > span { display: inline-block; }
 .js .reveal .w > span { transform: translateY(105%); transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 45ms); }
 .js .reveal.in .w > span { transform: none; }
-.js .landing .reveal.in .w > span { transform: translateY(105%); }
-.js.loaded .landing .reveal.in .w > span { transform: none; transition-delay: calc(200ms + var(--i, 0) * 45ms); }
 .js .reveal > :not(h2):not(h1), .js .reveal.fade { opacity: 0; transform: translateY(24px); transition: opacity 1s ease 0.3s, transform 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s; }
 .js .reveal.in > :not(h2):not(h1), .js .reveal.fade.in { opacity: 1; transform: none; }
-.js .landing .scroll-cue.in { opacity: 0; }
-.js.loaded .landing .scroll-cue.in { opacity: 1; transform: none; transition-delay: 1s; }
+.js .landing .scroll-cue.in { transition-delay: 1s; }
 
 /* sections */
 .display { font-size: clamp(44px, 6.4vw, var(--text-display)); line-height: 1; letter-spacing: -0.04em; font-weight: 400; max-width: 12ch; }

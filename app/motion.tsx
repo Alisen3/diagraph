@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /** Adds .in to every .reveal element as it scrolls into view. */
 export function RevealObserver() {
@@ -61,14 +61,19 @@ export function TeamCarousel({ people }: { people: [string, string, string?][] }
 }
 
 /** Switches between the dark and light theme and remembers the choice. */
+const watchTheme = (onChange: () => void) => {
+  const watch = new MutationObserver(onChange);
+  watch.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  return () => watch.disconnect();
+};
+
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<string | null>(null);
-  useEffect(() => setTheme(document.documentElement.dataset.theme ?? "dark"), []);
+  // the theme lives on <html data-theme>, set before paint; null on the server
+  const theme = useSyncExternalStore(watchTheme, () => document.documentElement.dataset.theme ?? "dark", () => null);
   const next = theme === "light" ? "dark" : "light";
   const toggle = () => {
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem("theme", next); } catch {}
-    setTheme(next);
   };
   return (
     <button type="button" className="ghost theme-toggle" onClick={toggle} aria-label={`Switch to ${next} theme`}>

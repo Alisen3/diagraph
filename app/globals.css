@@ -205,7 +205,8 @@ main { overflow-x: clip; }
 .carousel.fade-start .team { mask-image: linear-gradient(to right, transparent, #000 var(--gutter)); }
 .carousel.fade-start.fade-end .team { mask-image: linear-gradient(to right, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent); }
 .team li { scroll-snap-align: start; display: grid; gap: var(--spacing-6); }
-.portrait { aspect-ratio: 4 / 5; border-radius: var(--radius-3xl); background: var(--color-deep-verdant); display: grid; place-items: center; font-size: var(--text-heading); font-weight: 400; letter-spacing: -0.04em; margin-bottom: var(--spacing-12); }
+.portrait img { object-fit: cover; }
+.portrait { position: relative; overflow: hidden; aspect-ratio: 4 / 5; border-radius: var(--radius-3xl); background: var(--color-deep-verdant); display: grid; place-items: center; font-size: var(--text-heading); font-weight: 400; letter-spacing: -0.04em; margin-bottom: var(--spacing-12); }
 .team .role { font-size: var(--text-caption); font-weight: 400; letter-spacing: 0.025em; text-transform: uppercase; color: var(--color-electric-iris); }
 /* roomy line so descenders (y, g, Ş) are not clipped by the scrolling track */
 .team .name { font-size: var(--text-heading-xs); font-weight: 400; letter-spacing: -0.02em; line-height: 1.3; }

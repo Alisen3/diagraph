@@ -36,8 +36,9 @@ const PLAN: [string, [string, string][]][] = [
   ]],
 ];
 
-const TEAM: [string, string][] = [
-  ["Team member", "Elif Su Temirel"],
+// [role, name, optional photo in public/team]
+const TEAM: [string, string, string?][] = [
+  ["Team member", "Elif Su Temirel", "/team/elif-su-temirel.jpg"],
   ["Team member", "Bora Balcı"],
   ["Team member", "Asya Ünal"],
   ["Team member", "Ali Şen"],

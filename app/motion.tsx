@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 /** Counts 0 to 100 while the scene spins up, then lifts away and lets the hero text in. */
@@ -48,7 +49,7 @@ export function RevealObserver() {
   return null;
 }
 
-export function TeamCarousel({ people }: { people: [string, string][] }) {
+export function TeamCarousel({ people }: { people: [string, string, string?][] }) {
   const track = useRef<HTMLUListElement>(null);
   const [edge, setEdge] = useState({ start: true, end: false });
   const update = () => {
@@ -70,9 +71,13 @@ export function TeamCarousel({ people }: { people: [string, string][] }) {
   return (
     <div className={`carousel${edge.start ? "" : " fade-start"}${edge.end ? "" : " fade-end"}`}>
       <ul ref={track} className="team" onScroll={update}>
-        {people.map(([role, name]) => (
+        {people.map(([role, name, photo]) => (
           <li key={name}>
-            <span className="portrait" aria-hidden="true">{name.split(" ").map((p) => p[0]).join("")}</span>
+            <span className="portrait" aria-hidden={!photo}>
+              {photo
+                ? <Image src={photo} alt={name} fill sizes="300px" />
+                : name.split(" ").map((p) => p[0]).join("")}
+            </span>
             <span className="role">{role}</span>
             <span className="name">{name}</span>
           </li>

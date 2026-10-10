@@ -176,7 +176,7 @@ Tüm sayfanın arkasında `position: fixed` bir WebGL tuvali var (`.brain-scene`
 | case | beden | 1 | 0 | Dağılır ve `fade: 0.2` ile soluklaşır. Demo kutusu da `data-scene="case"` taşır, böylece sahne demo ekranın ortasına gelene kadar sakin kalır |
 | how | graf | 0 | 2.1 | Metin solda, graf sağda |
 | privacy | graf | 0 | -2.1 | |
-| measure | graf | 0.9 | 0 | Metriklerin arkasında dağınık |
+| measure | graf | 0.9 | 0 | Dağılır ve `fade: 0.2` ile soluklaşır. Metrik ızgarası da `data-scene="measure"` taşır, sahne ızgara ortalanana kadar sakin kalır |
 | plan | beden | 0 | -2.2 | "Patient side first" |
 | team | beden | 1 | 0 | Dağınık |
 | closing | beyin | 0 | 1.75 | Hero'ya geri döner |

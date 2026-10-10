@@ -131,7 +131,7 @@ const POSES: Record<string, Pose> = {
   case: P(BODYW, 1, 0, 0, 1.5, { pain: 1, fade: 0.2 }), // stays quiet behind the case demo
   how: P(GRAPH, 0, 2.1, 0.4, 1.25),
   privacy: P(GRAPH, 0, -2.1, -0.5, 1.3),
-  measure: P(GRAPH, 0.9, 0, 0, 1.3),
+  measure: P(GRAPH, 0.9, 0, 0, 1.3, { fade: 0.2 }), // stays quiet behind the metrics
   plan: P(BODYW, 0, -2.2, 0.5, 1.45, { rotX: 0.02 }),
   team: P(BODYW, 1, 0, 0, 1.45),
   closing: P(BRAIN, 0, 1.75, 0.55, 1.45),

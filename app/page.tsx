@@ -234,7 +234,7 @@ export default function Home() {
               the raw record. Both studies will seek ethics approval first.
             </p>
           </div>
-          <dl className="metrics reveal fade">
+          <dl className="metrics reveal fade" data-scene="measure">
             {METRICS.map(([value, what]) => (<div key={what}><dt>{value}</dt><dd>{what}</dd></div>))}
           </dl>
         </section>

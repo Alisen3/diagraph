@@ -38,6 +38,17 @@
   color-scheme: dark;
 }
 
+/* Light theme: the same roles on a white canvas. "void" stays the page colour and "bone white" the text colour. */
+:root[data-theme="light"] {
+  --color-void: #ffffff;
+  --color-bone-white: #0a0a0a;
+  --color-ash-gray: #6b6b6b;
+  --color-silver-mist: #4a4a4a;
+  --color-saffron-spark: #b87400;
+  --faint: rgba(0, 0, 0, 0.12);
+  color-scheme: light;
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
@@ -87,6 +98,9 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
 .nav { display: flex; align-items: center; gap: var(--spacing-36); min-height: 84px; }
 .wordmark { display: inline-flex; align-items: center; gap: 10px; color: var(--color-bone-white); text-decoration: none; font-size: 20px; font-weight: 400; letter-spacing: -0.02em; }
 .nav nav { display: flex; gap: var(--spacing-30); margin-left: auto; }
+.theme-toggle { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: var(--radius-full); color: var(--color-bone-white); }
+.theme-toggle svg { width: 20px; height: 20px; }
+@media (max-width: 760px) { .theme-toggle { margin-left: auto; } .theme-toggle + .pill { margin-left: 0; } }
 .nav nav a {
   color: var(--color-ash-gray); text-decoration: none;
   font-size: var(--text-nav-label); font-weight: 600; letter-spacing: 0.025em; text-transform: uppercase;
@@ -94,7 +108,7 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
 .nav nav a:hover { color: var(--color-bone-white); }
 .pill, .btn.primary {
   display: inline-flex; align-items: center; justify-content: center;
-  background: var(--color-electric-iris); color: var(--color-bone-white);
+  background: var(--color-electric-iris); color: #ffffff;
   border: 0; border-radius: var(--radius-3xl); padding: 14.4px 16px;
   font: inherit; font-size: var(--text-nav-label); font-weight: 600; letter-spacing: 0.025em; text-transform: uppercase; line-height: 1;
   text-decoration: none; cursor: pointer;
@@ -130,11 +144,11 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
 .node-label {
   position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform;
   font-size: var(--text-caption); font-weight: 400; color: var(--color-bone-white);
-  text-shadow: 0 0 6px #000, 0 0 2px #000;
+  text-shadow: 0 0 6px var(--color-void), 0 0 2px var(--color-void);
 }
 .pain-marker {
   position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 10px; white-space: nowrap; will-change: transform;
-  font-size: var(--text-caption); font-weight: 400; color: var(--color-saffron-spark); text-shadow: 0 0 6px #000;
+  font-size: var(--text-caption); font-weight: 400; color: var(--color-saffron-spark); text-shadow: 0 0 6px var(--color-void);
 }
 .pain-marker i { position: relative; width: 18px; height: 18px; border-radius: 50%; background: var(--color-saffron-spark); box-shadow: 0 0 18px 4px rgba(255, 184, 41, 0.6); }
 .pain-marker i::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 1px solid var(--color-saffron-spark); animation: pain-pulse 1.6s ease-out infinite; }

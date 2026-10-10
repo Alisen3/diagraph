@@ -3,8 +3,13 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-// surface patches; amber is kept for the rim so outlines glow warm
-const COLORS = ["#ffffff", "#c9b8ff", "#8052ff", "#2fd3b0", "#a98bff"];
+// surface patches; amber is kept for the rim so outlines glow warm. Light theme swaps in darker inks.
+const PALETTES = {
+  dark: { patches: ["#ffffff", "#c9b8ff", "#8052ff", "#2fd3b0", "#a98bff"], bg: 0x000000, rim: [1, 0.72, 0.16], hover: [1, 1, 1], line: 0.55 },
+  light: { patches: ["#1b1340", "#5b3fd9", "#8052ff", "#0f8a74", "#3a2a8a"], bg: 0xffffff, rim: [0.85, 0.5, 0], hover: [0.05, 0.05, 0.1], line: 0.35 },
+};
+type Theme = keyof typeof PALETTES;
+const COLORS = PALETTES.dark.patches;
 const BRAIN_LABELS = ["Acute appendicitis", "Fever", "Nausea", "Leukocytosis", "Abdominal pain", "Gastroenteritis", "Peritonitis", "Type 2 diabetes"];
 const NODES = 110;
 
@@ -163,6 +168,8 @@ const vertex = /* glsl */ `
   uniform vec2 uMouse;
   uniform vec2 uDelta;
   uniform float uAspect;
+  uniform vec3 uRim;
+  uniform vec3 uHover;
   varying vec3 vColor;
   varying float vAlpha;
 
@@ -202,7 +209,7 @@ const vertex = /* glsl */ `
     float focus = abs(-mv.z - 6.0);
     vAlpha = mix(0.62, 0.1, smoothstep(0.0, 2.6, focus)) * mix(1.0, 0.28 * step(aRand.x, 0.3), e);
     vAlpha = max(vAlpha + rim * 0.45, near * 0.7);
-    vColor = mix(mix(aColor, vec3(1.0, 0.72, 0.16), min(1.0, rim * 1.4) * step(0.3, aRand.z)), vec3(1.0), near * 0.35);
+    vColor = mix(mix(aColor, uRim, min(1.0, rim * 1.4) * step(0.3, aRand.z)), uHover, near * 0.35);
   }
 `;
 
@@ -246,7 +253,7 @@ export default function ParticleScene() {
     const graphPts = sampleGraph(COUNT);
     const scatter = new Float32Array(COUNT * 3);
     const rand = new Float32Array(COUNT * 4);
-    const color = new Float32Array(COUNT * 3);
+    const color = { dark: new Float32Array(COUNT * 3), light: new Float32Array(COUNT * 3) };
     const c = new THREE.Color();
     for (let i = 0; i < COUNT; i++) {
       scatter.set([(Math.random() - 0.5) * 12, (Math.random() - 0.5) * 8, -6 + Math.random() * 9], i * 3);
@@ -255,14 +262,18 @@ export default function ParticleScene() {
       const [bx, by, bz] = [brainPts[i * 3], brainPts[i * 3 + 1], brainPts[i * 3 + 2]];
       const f = Math.sin(bx * 2.2 + bz * 1.3) + Math.cos(by * 2.6 - bx * 1.1) + Math.sin(bz * 3.1 + by);
       const patch = Math.min(COLORS.length - 1, Math.floor(((f + 3) / 6) * COLORS.length));
-      c.set(COLORS[Math.random() < 0.8 ? patch : (Math.random() * COLORS.length) | 0]);
-      color.set([c.r, c.g, c.b], i * 3);
+      const pick = Math.random() < 0.8 ? patch : (Math.random() * COLORS.length) | 0;
+      for (const theme of ["dark", "light"] as const) {
+        c.set(PALETTES[theme].patches[pick]);
+        color[theme].set([c.r, c.g, c.b], i * 3);
+      }
     }
 
     const uniforms = {
       uTime: { value: 0 }, uExplode: { value: 0 }, uW: { value: new THREE.Vector3(1, 0, 0) },
       uMotion: { value: still ? 0 : 1 }, uSize: { value: 0.03 },
       uMouse: { value: new THREE.Vector2(9, 9) }, uDelta: { value: new THREE.Vector2() }, uAspect: { value: 1 }, uFade: { value: 1 },
+      uRim: { value: new THREE.Vector3() }, uHover: { value: new THREE.Vector3() },
     };
     const makeMaterial = (u: typeof uniforms) => new THREE.ShaderMaterial({
       vertexShader: vertex, fragmentShader: fragment, uniforms: u, transparent: true, depthWrite: false,
@@ -277,7 +288,8 @@ export default function ParticleScene() {
     for (const [name, pts] of Object.entries(shapes)) geo.setAttribute(name, new THREE.InstancedBufferAttribute(new Float32Array(pts), 3));
     geo.setAttribute("aScatter", new THREE.InstancedBufferAttribute(scatter, 3));
     geo.setAttribute("aRand", new THREE.InstancedBufferAttribute(rand, 4));
-    geo.setAttribute("aColor", new THREE.InstancedBufferAttribute(color, 3));
+    const colorAttr = new THREE.InstancedBufferAttribute(new Float32Array(color.dark), 3);
+    geo.setAttribute("aColor", colorAttr);
     geo.instanceCount = COUNT;
     group.add(new THREE.LineSegments(geo, material));
 
@@ -310,7 +322,8 @@ export default function ParticleScene() {
     for (const [name, pts] of Object.entries(shapes)) lineGeo.setAttribute(name, attr(pts, 3));
     lineGeo.setAttribute("aScatter", attr(scatter, 3));
     lineGeo.setAttribute("aRand", attr(rand, 4));
-    lineGeo.setAttribute("aColor", new THREE.BufferAttribute(new Float32Array(ends.length * 3).fill(0.55), 3));
+    const lineColor = new THREE.BufferAttribute(new Float32Array(ends.length * 3), 3);
+    lineGeo.setAttribute("aColor", lineColor);
     // shares every uniform with the particles except its own fade
     const lineUniforms = { ...uniforms, uFade: { value: 0.5 } };
     const lineMat = makeMaterial(lineUniforms);
@@ -322,6 +335,20 @@ export default function ParticleScene() {
     const pain = label(host, "", "pain-marker");
     const painText = document.createElement("span");
     pain.append(document.createElement("i"), painText);
+
+    const applyTheme = () => {
+      const theme: Theme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+      const p = PALETTES[theme];
+      renderer.setClearColor(p.bg, 1);
+      colorAttr.copyArray(color[theme]);
+      colorAttr.needsUpdate = true;
+      lineColor.copyArray(new Float32Array(ends.length * 3).fill(p.line));
+      lineColor.needsUpdate = true;
+      uniforms.uRim.value.fromArray(p.rim);
+      uniforms.uHover.value.fromArray(p.hover);
+      if (still) tick(0);
+    };
+    const themeWatch = new MutationObserver(applyTheme);
 
     let w = 0, h = 0, raf = 0;
     const target: Pose = { ...POSES.hero, w: [...POSES.hero.w] };
@@ -427,6 +454,8 @@ export default function ParticleScene() {
     const onResize = () => { resize(); onScrollFrame(); };
     resize();
     onScroll();
+    applyTheme();
+    themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     Object.assign(state, { ...target, w: [...target.w] });
     window.addEventListener("resize", onResize);
     window.addEventListener("scroll", onScrollFrame, { passive: true });
@@ -436,6 +465,7 @@ export default function ParticleScene() {
 
     return () => {
       cancelAnimationFrame(raf);
+      themeWatch.disconnect();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScrollFrame);
       window.removeEventListener("pointermove", onMove);

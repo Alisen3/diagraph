@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import ParticleScene from "./particle-scene";
 import CaseDemo from "./case-demo";
-import { Preloader, RevealObserver, TeamCarousel } from "./motion";
+import { Preloader, RevealObserver, TeamCarousel, ThemeToggle } from "./motion";
 
 const PIPELINE = [
   ["Ingest records", "FHIR resources, clinical notes and uploaded reports come in."],
@@ -85,6 +85,7 @@ export default function Home() {
           <a href="#how">How it works</a>
           <a href="#team">Team</a>
         </nav>
+        <ThemeToggle />
         <a className="pill" href="https://github.com/Alisen3/diagraph">GitHub</a>
       </header>
 

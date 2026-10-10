@@ -8,6 +8,10 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
+const THEME_SCRIPT = `(function(){var d=document.documentElement,t;try{t=localStorage.getItem('theme')}catch(e){}
+if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+d.dataset.theme=t;d.classList.add('js')})()`;
+
 export const metadata: Metadata = {
   title: "DiaGraph: a medical knowledge graph for patients and clinicians",
   description:
@@ -18,8 +22,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
-        {/* hide reveal targets only when JS can bring them back */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+        {/* before first paint: pick the saved or system theme, and hide reveal targets only when JS can bring them back */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>{children}</body>
     </html>

@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import BrainScene from "./brain-scene";
+import ParticleScene from "./particle-scene";
 import CaseDemo from "./case-demo";
 import { Preloader, RevealObserver, TeamCarousel } from "./motion";
 
@@ -74,7 +74,7 @@ export default function Home() {
   return (
     <>
       <Preloader />
-      <BrainScene />
+      <ParticleScene />
       <RevealObserver />
 
       <header className="wrap nav">
@@ -89,7 +89,7 @@ export default function Home() {
       </header>
 
       <main>
-        <section className="wrap landing">
+        <section className="wrap landing" data-scene="hero">
           <h1 className="display reveal">
             <Words text="Your health record already has the answers." />
             <span className="dim"><Words text="DiaGraph connects them." from={7} /></span>
@@ -97,7 +97,7 @@ export default function Home() {
           <p className="scroll-cue label reveal fade">Scroll to explore</p>
         </section>
 
-        <section className="wrap tall">
+        <section className="wrap tall" data-scene="intro">
           <div className="block reveal">
             <h2><Words text="Medical knowledge you can follow." /></h2>
             <p className="label">CS491 Senior Design, Bilkent University</p>
@@ -110,7 +110,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="patients" className="wrap tall">
+        <section id="patients" className="wrap tall" data-scene="patients">
           <div className="block right reveal">
             <h2><Words text="Understand your own record." /></h2>
             <p className="label">For patients</p>
@@ -126,7 +126,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="wrap tall">
+        <section className="wrap tall" data-scene="clinicians">
           <div className="block reveal">
             <h2><Words text="Reason with evidence, not guesses." /></h2>
             <p className="label">For clinicians, with consent</p>
@@ -141,7 +141,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="case" className="wrap tall">
+        <section id="case" className="wrap tall" data-scene="case">
           <div className="block right reveal">
             <h2><Words text="Timing carries diagnostic information." /></h2>
             <p className="label">Try it</p>
@@ -153,7 +153,7 @@ export default function Home() {
           <div className="reveal fade"><CaseDemo /></div>
         </section>
 
-        <section id="how" className="wrap tall">
+        <section id="how" className="wrap tall" data-scene="how">
           <h2 className="display reveal"><Words text="The model proposes. Structure decides." /></h2>
           <div className="columns">
             <div className="principles reveal fade">
@@ -174,7 +174,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="wrap tall">
+        <section className="wrap tall" data-scene="privacy">
           <div className="block right reveal">
             <h2><Words text="Built for health data." /></h2>
             <p className="label">Privacy by design</p>
@@ -186,7 +186,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="wrap tall">
+        <section className="wrap tall" data-scene="measure">
           <div className="block reveal">
             <h2><Words text="Measured, not assumed." /></h2>
             <p className="label">Focus: acute abdominal pain in adults</p>
@@ -197,7 +197,7 @@ export default function Home() {
           </dl>
         </section>
 
-        <section className="wrap tall">
+        <section className="wrap tall" data-scene="plan">
           <div className="block right reveal">
             <h2><Words text="Two semesters, patient side first." /></h2>
             <div className="plan">
@@ -211,12 +211,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="team" className="wrap team-section">
+        <section id="team" className="wrap team-section" data-scene="team">
           <h2 className="reveal"><Words text="Our team." /></h2>
           <TeamCarousel people={TEAM} />
         </section>
 
-        <section className="wrap closing">
+        <section className="wrap closing" data-scene="closing">
           <h2 className="display reveal">
             <Words text="Your health record already has the answers." />
             <span className="dim"><Words text="DiaGraph connects them." from={7} /></span>

@@ -132,6 +132,16 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
   font-size: var(--text-caption); font-weight: 400; color: var(--color-bone-white);
   text-shadow: 0 0 6px #000, 0 0 2px #000;
 }
+.pain-marker {
+  position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 10px; white-space: nowrap; will-change: transform;
+  font-size: var(--text-caption); font-weight: 400; color: var(--color-saffron-spark); text-shadow: 0 0 6px #000;
+}
+.pain-marker i { position: relative; width: 18px; height: 18px; border-radius: 50%; background: var(--color-saffron-spark); box-shadow: 0 0 18px 4px rgba(255, 184, 41, 0.6); }
+.pain-marker i::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 1px solid var(--color-saffron-spark); animation: pain-pulse 1.6s ease-out infinite; }
+@keyframes pain-pulse { from { transform: scale(0.5); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+.pain-marker span { position: absolute; left: 120px; padding-left: 12px; border-left: 1px solid var(--color-saffron-spark); }
+.pain-marker.flip span { left: auto; right: 120px; padding: 0 12px 0 0; border-left: 0; border-right: 1px solid var(--color-saffron-spark); }
+@media (max-width: 760px) { .pain-marker span { display: none; } }
 .nav, main, .foot { position: relative; z-index: 1; }
 
 /* word-by-word reveal */
@@ -164,8 +174,7 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
 .block .label + .body { margin-top: 0; }
 .block .pill { margin-top: var(--spacing-18); }
 .quote { margin-top: var(--spacing-18); font-size: var(--text-heading-2xs); font-weight: 200; line-height: 1.45; }
-.columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-60); align-items: start; }
-@media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
+.columns { display: grid; gap: var(--spacing-60); max-width: 600px; }
 .team-section { padding-block: var(--spacing-120); }
 .closing { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: var(--spacing-60); }
 .closing .display { max-width: 11ch; }

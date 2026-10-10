@@ -1,5 +1,5 @@
 import CaseDemo from "./case-demo";
-import Constellation from "./constellation";
+import BrainField from "./brain-field";
 
 const PIPELINE = [
   ["Ingest records", "FHIR resources, clinical notes and uploaded reports come in."],
@@ -64,6 +64,7 @@ function Logo() {
 export default function Home() {
   return (
     <>
+      <BrainField />
       <header className="wrap nav">
         <a href="#" className="wordmark" aria-label="DiaGraph home"><Logo />DiaGraph</a>
         <nav aria-label="Sections">
@@ -88,7 +89,7 @@ export default function Home() {
             </p>
             <a className="link" href="#case">Follow one case</a>
           </div>
-          <Constellation />
+          <div id="brain-anchor" className="brain-anchor" aria-hidden="true" />
         </section>
 
         <section id="case" className="wrap section">

@@ -15,4 +15,5 @@ Deployed on Vercel from the `main` branch.
 Ali Şen, Asya Ünal, Bilgehan Akın, Bora Balcı, Elif Su Temirel
 
 Supervisor: Professor Cevdet Aykanat
+
 Innovation Expert: Can Koyuncu, PhD

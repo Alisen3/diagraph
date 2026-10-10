@@ -10,7 +10,7 @@ const inter = Inter({
 
 const THEME_SCRIPT = `(function(){var d=document.documentElement,t;try{t=localStorage.getItem('theme')}catch(e){}
 if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
-d.dataset.theme=t;d.classList.add('js')})()`;
+d.dataset.theme=t;d.classList.add('js');history.scrollRestoration='manual'})()`;
 
 export const metadata: Metadata = {
   title: "DiaGraph: a medical knowledge graph for patients and clinicians",
@@ -22,7 +22,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
-        {/* before first paint: pick the saved or system theme, and hide reveal targets only when JS can bring them back */}
+        {/* before first paint: pick the saved or system theme, hide reveal targets only when JS can bring them back,
+            and start every load at the top instead of the restored scroll position */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>{children}</body>

@@ -194,14 +194,21 @@ h3 { font-size: var(--text-heading-2xs); font-weight: 400; letter-spacing: -0.02
 .closing .display { max-width: 11ch; }
 
 /* team carousel */
-.carousel { margin-top: var(--spacing-60); }
-.team { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 300px); gap: var(--spacing-36); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: var(--spacing-6); }
+/* the track runs to both screen edges; padding keeps the first card on the content column */
+.carousel { --gutter: max(var(--spacing-36), calc((100vw - var(--page-max-width)) / 2 + var(--spacing-36))); margin: var(--spacing-60) calc(50% - 50vw) 0; }
+@media (max-width: 640px) { .carousel { --gutter: 16px; } }
+main { overflow-x: clip; }
+.team { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 300px); gap: var(--spacing-36); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 0 var(--gutter) var(--spacing-6); scroll-padding-inline: var(--gutter); }
 .team::-webkit-scrollbar { display: none; }
+/* soft edges instead of a hard cut, only on the sides that have more cards */
+.carousel.fade-end .team { mask-image: linear-gradient(to right, #000 calc(100% - var(--gutter)), transparent); }
+.carousel.fade-start .team { mask-image: linear-gradient(to right, transparent, #000 var(--gutter)); }
+.carousel.fade-start.fade-end .team { mask-image: linear-gradient(to right, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent); }
 .team li { scroll-snap-align: start; display: grid; gap: var(--spacing-6); }
 .portrait { aspect-ratio: 4 / 5; border-radius: var(--radius-3xl); background: var(--color-deep-verdant); display: grid; place-items: center; font-size: var(--text-heading); font-weight: 400; letter-spacing: -0.04em; margin-bottom: var(--spacing-12); }
 .team .role { font-size: var(--text-caption); font-weight: 400; letter-spacing: 0.025em; text-transform: uppercase; color: var(--color-electric-iris); }
 .team .name { font-size: var(--text-heading-xs); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; }
-.carousel-nav { margin-top: var(--spacing-30); display: flex; gap: var(--spacing-24); }
+.carousel-nav { margin-top: var(--spacing-30); padding-inline: var(--gutter); display: flex; gap: var(--spacing-24); }
 
 /* case demo */
 .case { margin-top: var(--spacing-96); }

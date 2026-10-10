@@ -50,14 +50,26 @@ export function RevealObserver() {
 
 export function TeamCarousel({ people }: { people: [string, string][] }) {
   const track = useRef<HTMLUListElement>(null);
+  const [edge, setEdge] = useState({ start: true, end: false });
+  const update = () => {
+    const el = track.current!;
+    setEdge({ start: el.scrollLeft < 4, end: el.scrollLeft + el.clientWidth > el.scrollWidth - 4 });
+  };
+  useEffect(() => {
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
   const move = (dir: number) => {
     const el = track.current!;
-    const card = el.firstElementChild as HTMLElement;
-    el.scrollBy({ left: dir * (card.offsetWidth + 36), behavior: "smooth" });
+    const cards = Array.from(el.children) as HTMLElement[];
+    const step = cards[1].offsetLeft - cards[0].offsetLeft;
+    // land exactly on a card so snapping does not fight the scroll
+    el.scrollTo({ left: Math.round(el.scrollLeft / step + dir) * step, behavior: "smooth" });
   };
   return (
-    <div className="carousel">
-      <ul ref={track} className="team">
+    <div className={`carousel${edge.start ? "" : " fade-start"}${edge.end ? "" : " fade-end"}`}>
+      <ul ref={track} className="team" onScroll={update}>
         {people.map(([role, name]) => (
           <li key={name}>
             <span className="portrait" aria-hidden="true">{name.split(" ").map((p) => p[0]).join("")}</span>
@@ -67,8 +79,8 @@ export function TeamCarousel({ people }: { people: [string, string][] }) {
         ))}
       </ul>
       <div className="carousel-nav">
-        <button type="button" className="ghost" onClick={() => move(-1)}>Previous</button>
-        <button type="button" className="ghost" onClick={() => move(1)}>Next</button>
+        <button type="button" className="ghost" onClick={() => move(-1)} disabled={edge.start}>Previous</button>
+        <button type="button" className="ghost" onClick={() => move(1)} disabled={edge.end}>Next</button>
       </div>
     </div>
   );

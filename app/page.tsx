@@ -173,7 +173,8 @@ export default function Home() {
               differential change.
             </p>
           </div>
-          <div className="reveal fade"><CaseDemo /></div>
+          {/* a second "case" key holds the quiet pose until the demo itself is centred */}
+          <div className="reveal fade" data-scene="case"><CaseDemo /></div>
         </section>
 
         <section id="how" className="wrap tall" data-scene="how">

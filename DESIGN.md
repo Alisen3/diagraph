@@ -165,7 +165,7 @@ Tüm sayfanın arkasında `position: fixed` bir WebGL tuvali var (`.brain-scene`
 
 **Kaydırma koreografisi:**
 - Her bölüm `data-scene="..."` ile işaretlidir. Her bölüm için bir **poz** (`POSES`) tanımlı.
-- Bir pozun alanları: şekil ağırlıkları, dağılma miktarı, x/y konumu, dönüş açıları, ölçek ve ağrı noktasının ilerlemesi.
+- Bir pozun alanları: şekil ağırlıkları, dağılma miktarı, x/y konumu, dönüş açıları, ölçek, ağrı noktasının ilerlemesi ve genel opaklık (`fade`, varsayılan 1).
 
 | Poz | Şekil | Dağılma | x | Not |
 |---|---|---|---|---|
@@ -173,7 +173,7 @@ Tüm sayfanın arkasında `position: fixed` bir WebGL tuvali var (`.brain-scene`
 | intro | beyin | 0.35 | 1.9 | Önce ters yöne döner (`rotY -0.8`), sonra ufalanmaya başlar |
 | patients | beden | 0 | -2.2 | Ağrı göbek çevresinde |
 | clinicians | beden | 0 | 2.2 | Ağrı sağ alt karına kayar |
-| case | beden | 1 | 0 | Demo öne çıksın diye dağılır |
+| case | beden | 1 | 0 | Dağılır ve `fade: 0.2` ile soluklaşır. Demo kutusu da `data-scene="case"` taşır, böylece sahne demo ekranın ortasına gelene kadar sakin kalır |
 | how | graf | 0 | 2.1 | Metin solda, graf sağda |
 | privacy | graf | 0 | -2.1 | |
 | measure | graf | 0.9 | 0 | Metriklerin arkasında dağınık |

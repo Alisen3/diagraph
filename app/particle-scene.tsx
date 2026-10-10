@@ -116,9 +116,10 @@ type Pose = {
   w: [number, number, number]; // weight of brain, body, graph
   explode: number; x: number; y: number; rotY: number; rotX: number; scale: number;
   pain: number; // 0 pain at the navel, 1 moved to the lower right abdomen
+  fade: number; // overall opacity, lowered where interactive content sits on top
 };
 const P = (w: Pose["w"], explode: number, x: number, rotY: number, scale: number, extra: Partial<Pose> = {}): Pose =>
-  ({ w, explode, x, y: 0, rotY, rotX: 0.15, scale, pain: 0, ...extra });
+  ({ w, explode, x, y: 0, rotY, rotX: 0.15, scale, pain: 0, fade: 1, ...extra });
 const BRAIN: Pose["w"] = [1, 0, 0], BODYW: Pose["w"] = [0, 1, 0], GRAPH: Pose["w"] = [0, 0, 1];
 
 // Each section marks itself with data-scene; the scene settles into its pose when that section is centred.
@@ -127,7 +128,7 @@ const POSES: Record<string, Pose> = {
   intro: P(BRAIN, 0.35, 1.9, -0.8, 1.35), // turns away first, then starts to come apart
   patients: P(BODYW, 0, -2.2, 0.3, 1.5, { rotX: 0.02 }),
   clinicians: P(BODYW, 0, 2.2, -0.3, 1.5, { rotX: 0.02, pain: 1 }),
-  case: P(BODYW, 1, 0, 0, 1.5, { pain: 1 }),
+  case: P(BODYW, 1, 0, 0, 1.5, { pain: 1, fade: 0.2 }), // stays quiet behind the case demo
   how: P(GRAPH, 0, 2.1, 0.4, 1.25),
   privacy: P(GRAPH, 0, -2.1, -0.5, 1.3),
   measure: P(GRAPH, 0.9, 0, 0, 1.3),
@@ -147,7 +148,7 @@ function blend(a: Pose, b: Pose, t: number): Pose {
     w: [mix(a.w[0], b.w[0], s), mix(a.w[1], b.w[1], s), mix(a.w[2], b.w[2], s)],
     explode: mix(a.explode, b.explode, te),
     x: mix(a.x, b.x, s), y: mix(a.y, b.y, s), rotY: mix(a.rotY, b.rotY, s), rotX: mix(a.rotX, b.rotX, s),
-    scale: mix(a.scale, b.scale, s), pain: mix(a.pain, b.pain, s),
+    scale: mix(a.scale, b.scale, s), pain: mix(a.pain, b.pain, s), fade: mix(a.fade, b.fade, s),
   };
 }
 
@@ -404,7 +405,7 @@ export default function ParticleScene() {
     const tick = (now: number) => {
       // ease toward the scroll pose so movement feels weighted
       const k = still ? 1 : 0.06;
-      for (const key of ["explode", "x", "y", "rotY", "rotX", "scale", "pain"] as const) state[key] += (target[key] - state[key]) * k;
+      for (const key of ["explode", "x", "y", "rotY", "rotX", "scale", "pain", "fade"] as const) state[key] += (target[key] - state[key]) * k;
       for (let i = 0; i < 3; i++) state.w[i] += (target.w[i] - state.w[i]) * k;
       sway = { y: sway.y + (tiltY - sway.y) * 0.05, x: sway.x + (tiltX - sway.x) * 0.05 };
 
@@ -418,9 +419,9 @@ export default function ParticleScene() {
       uniforms.uDelta.value.copy(motion);
 
       uniforms.uW.value.set(state.w[0], state.w[1], state.w[2]);
-      if (still) uniforms.uFade.value = 1 - state.explode * 0.8;
+      if (still) uniforms.uFade.value = (1 - state.explode * 0.8) * state.fade;
       else uniforms.uExplode.value = state.explode;
-      const dim = w < 760 && window.scrollY > h * 0.5 ? 0.3 : 1;
+      const dim = (w < 760 && window.scrollY > h * 0.5 ? 0.3 : 1) * state.fade;
       if (!still) uniforms.uFade.value = dim;
       // the brain's network only belongs to the brain, and would streak once scattered
       lineUniforms.uFade.value = 0.5 * state.w[0] ** 4 * Math.max(0, 1 - state.explode * 2.5) * dim;

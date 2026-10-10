@@ -54,7 +54,7 @@ const TEAM: [string, string, string?][] = [
   ["Team member", "Ali Şen"],
   ["Team member", "Bilgehan Akın"],
   ["Supervisor", "Cevdet Aykanat"],
-  ["Innovation expert", "Can Koyuncu"],
+  ["Innovation expert", "Can Koyuncu", "/team/can-koyuncu.jpg"],
 ];
 
 /** Splits a line into masked words that slide up when their block is revealed. */

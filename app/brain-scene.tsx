@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-const COLORS = ["#8052ff", "#a98bff", "#ffb829", "#2fd3b0", "#ff5fd2", "#4f8dff", "#ffffff"];
+// surface patches; amber is kept for the rim so the outline glows warm
+const COLORS = ["#ffffff", "#c9b8ff", "#8052ff", "#2fd3b0", "#a98bff"];
 const LABELS = ["Acute appendicitis", "Fever", "Nausea", "Leukocytosis", "Abdominal pain", "Gastroenteritis", "Peritonitis", "Type 2 diabetes"];
 const NODES = 110;
 
@@ -29,8 +30,10 @@ function sampleBrain(count: number) {
     const x = Math.random() * 2 - 1, y = Math.random() * 2 - 1, z = Math.random() * 2 - 1;
     if (!inside(x, y, z)) continue;
     const shell = !inside(x * 1.07, y * 1.07, z * 1.07);
-    // mostly a folded shell, with a thin haze inside
-    if (shell ? Math.random() > folds(x, y, z) : Math.random() > 0.05) continue;
+    // lateral (Sylvian) fissure: a groove running up and back along each side
+    const sylvian = Math.abs(z) > 0.3 && x > -0.5 && x < 0.45 && Math.abs(y - (-0.12 + (x + 0.5) * 0.32)) < 0.035;
+    // mostly a folded shell, with enough inside that it reads as a solid, not a ring
+    if (sylvian || (shell ? Math.random() > folds(x, y, z) : Math.random() > 0.1)) continue;
     pts.push(x, y, z);
   }
   return pts;
@@ -46,6 +49,7 @@ const vertex = /* glsl */ `
   uniform float uMotion;
   uniform float uSize;
   uniform vec2 uMouse;
+  uniform vec2 uDelta;
   uniform float uAspect;
   varying vec3 vColor;
   varying float vAlpha;
@@ -66,16 +70,23 @@ const vertex = /* glsl */ `
     vec4 clip = projectionMatrix * mv;
     vec2 d = clip.xy / clip.w - uMouse;
     d.x *= uAspect;
-    float push = smoothstep(0.32, 0.0, length(d)) * (1.0 - e) * uMotion;
-    mv.xy += normalize(d + 1e-5) * push * 0.22;
+    // near the cursor particles stir in place and get flung along the pointer's motion; nothing is pushed out, so no hole opens
+    float near = smoothstep(0.3, 0.0, length(d)) * (1.0 - e) * uMotion;
+    vec2 stir = vec2(sin(uTime * (2.0 + aRand.y * 4.0) + aRand.z * 6.28), cos(uTime * (2.0 + aRand.y * 4.0) + aRand.w * 6.28));
+    mv.xy += near * (stir * (0.08 + aRand.z * 0.16) + uDelta * (0.5 + aRand.y * 1.5));
 
-    mv.xyz += rot(vec3(t * (aRand.y - .5) + aRand.z * 6.28, t * (aRand.w - .5) + aRand.y * 6.28, 0.)) * position * uSize * (0.6 + aRand.w);
+    // brighter, warmer rim where the surface turns away from the viewer
+    vec3 n = normalize(normalMatrix * normalize(aBrain / vec3(1.0, 0.7, 0.66)));
+    float rim = pow(1.0 - abs(n.z), 2.0) * (1.0 - e);
+
+    mv.xyz += rot(vec3(t * (aRand.y - .5) + aRand.z * 6.28, t * (aRand.w - .5) + aRand.y * 6.28, 0.)) * position * uSize * (0.6 + aRand.w) * (1.0 + near * 0.8);
     gl_Position = projectionMatrix * mv;
 
     // fake depth of field: sharp at the brain's depth, faint in front and behind
     float focus = abs(-mv.z - 6.0);
-    vAlpha = mix(0.8, 0.12, smoothstep(0.0, 2.6, focus)) * mix(1.0, 0.28 * step(aRand.x, 0.3), e);
-    vColor = aColor;
+    vAlpha = mix(0.62, 0.1, smoothstep(0.0, 2.6, focus)) * mix(1.0, 0.28 * step(aRand.x, 0.3), e);
+    vAlpha = max(vAlpha + rim * 0.45, near * 0.7);
+    vColor = mix(mix(aColor, vec3(1.0, 0.72, 0.16), min(1.0, rim * 1.4) * step(0.3, aRand.z)), vec3(1.0), near * 0.35);
   }
 `;
 
@@ -93,7 +104,7 @@ export default function BrainScene() {
     const host = ref.current!;
     const mobile = window.innerWidth < 760;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const COUNT = mobile ? 2800 : 5500;
+    const COUNT = mobile ? 2400 : 4200;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -114,13 +125,17 @@ export default function BrainScene() {
     for (let i = 0; i < COUNT; i++) {
       scatter.set([(Math.random() - 0.5) * 12, (Math.random() - 0.5) * 8, -6 + Math.random() * 9], i * 3);
       rand.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
-      c.set(COLORS[(Math.random() * COLORS.length) | 0]);
+      // colour in patches by position, as regions of one surface, with a little random speckle
+      const [bx, by, bz] = [brainPts[i * 3], brainPts[i * 3 + 1], brainPts[i * 3 + 2]];
+      const f = Math.sin(bx * 2.2 + bz * 1.3) + Math.cos(by * 2.6 - bx * 1.1) + Math.sin(bz * 3.1 + by);
+      const patch = Math.min(COLORS.length - 1, Math.floor(((f + 3) / 6) * COLORS.length));
+      c.set(COLORS[Math.random() < 0.8 ? patch : (Math.random() * COLORS.length) | 0]);
       color.set([c.r, c.g, c.b], i * 3);
     }
 
     const uniforms = {
-      uTime: { value: 0 }, uExplode: { value: 0 }, uMotion: { value: still ? 0 : 1 }, uSize: { value: 0.022 },
-      uMouse: { value: new THREE.Vector2(9, 9) }, uAspect: { value: 1 }, uFade: { value: 1 },
+      uTime: { value: 0 }, uExplode: { value: 0 }, uMotion: { value: still ? 0 : 1 }, uSize: { value: 0.03 },
+      uMouse: { value: new THREE.Vector2(9, 9) }, uDelta: { value: new THREE.Vector2() }, uAspect: { value: 1 }, uFade: { value: 1 },
     };
     const material = new THREE.ShaderMaterial({
       vertexShader: vertex, fragmentShader: fragment, uniforms,
@@ -210,12 +225,14 @@ export default function BrainScene() {
     };
     const onMove = (e: PointerEvent) => {
       uniforms.uMouse.value.set((e.clientX / w) * 2 - 1, -(e.clientY / h) * 2 + 1);
-      target.rotY = ((e.clientX / w) - 0.5) * 0.5;
-      target.rotX = ((e.clientY / h) - 0.5) * 0.25;
+      target.rotY = ((e.clientX / w) - 0.5) * 0.3;
+      target.rotX = ((e.clientY / h) - 0.5) * 0.15;
     };
     const onLeave = () => uniforms.uMouse.value.set(9, 9);
 
     const v = new THREE.Vector3();
+    const lastMouse = new THREE.Vector2(9, 9);
+    const motion = new THREE.Vector2();
     const tick = (now: number) => {
       // ease toward targets so scroll and pointer feel weighted
       const k = still ? 1 : 0.07;
@@ -226,13 +243,19 @@ export default function BrainScene() {
       state.rotX += (target.rotX - state.rotX) * 0.05;
       const t = now / 1000;
       uniforms.uTime.value = t;
+      // pointer velocity, smoothed and decaying, in view-space units
+      const m = uniforms.uMouse.value;
+      if (lastMouse.x < 5 && m.x < 5) motion.lerp(new THREE.Vector2(m.x - lastMouse.x, m.y - lastMouse.y).multiplyScalar(18), 0.15);
+      motion.multiplyScalar(0.92).clampLength(0, 0.9);
+      lastMouse.copy(m);
+      uniforms.uDelta.value.copy(motion);
       if (still) uniforms.uFade.value = 1 - state.explode * 0.8;
       else uniforms.uExplode.value = state.explode;
       // edges would streak across the screen once scattered, so they fade out first
       lineUniforms.uFade.value = 0.5 * Math.max(0, 1 - state.explode * 2.5);
       brain.position.set(state.x, state.y, 0);
-      brain.rotation.y = -0.35 + state.rotY + (still ? 0 : Math.sin(t * 0.15) * 0.25);
-      brain.rotation.x = state.rotX;
+      brain.rotation.y = 0.55 + state.rotY + (still ? 0 : Math.sin(t * 0.15) * 0.12);
+      brain.rotation.x = 0.18 + state.rotX;
       renderer.render(scene, camera);
 
       const show = Math.max(0, 1 - state.explode * 4);

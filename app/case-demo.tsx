@@ -2,178 +2,30 @@
 
 import { useState } from "react";
 
-type Phenotype = "navel" | "rlq" | "nausea" | "anorexia" | "diarrhea" | "fever" | "wbc";
-type Disease = "app" | "gastro" | "mes";
-
-const PHENOTYPES: { id: Phenotype; label: string; y: number }[] = [
-  { id: "navel", label: "Pain around the navel", y: 30 },
-  { id: "rlq", label: "Right lower quadrant pain", y: 74 },
-  { id: "nausea", label: "Nausea", y: 118 },
-  { id: "anorexia", label: "Loss of appetite", y: 162 },
-  { id: "diarrhea", label: "Diarrhea", y: 206 },
-  { id: "fever", label: "Fever", y: 250 },
-  { id: "wbc", label: "Leukocytosis", y: 294 },
+const RECORDS = [
+  { date: "January", title: "First consultation", source: "Consultation note", note: "A visit records changes in sleep and energy.", patient: "Your first visit is now part of your history. The note records what you discussed, with a link to the original source.", doctor: "The consultation gives the starting point: what was reported and when. Later records can be reviewed against this history.", question: "What changed before this visit?" },
+  { date: "March", title: "Lab results added", source: "Lab report", note: "A lab report joins the earlier visit in the timeline.", patient: "Your lab report sits alongside your earlier visit. You can find both records in one place and bring them to your doctor.", doctor: "The new report adds dated evidence to the earlier consultation. Each result remains connected to its original record.", question: "How do the results relate to the earlier findings?" },
+  { date: "April", title: "Medication updated", source: "Prescription", note: "An updated prescription adds treatment context.", patient: "Your medication update is connected to your visits and results, so you can see where it fits in your history.", doctor: "The treatment timeline is now visible alongside the findings. The original prescription provides context for reviewing later changes.", question: "Which changes came before or after the medication update?" },
+  { date: "June", title: "Follow-up connected", source: "Follow-up note", note: "A later visit records how things have changed.", patient: "Your visits, results and medication update now form one timeline. Open the records and use the full history to prepare for your next conversation.", doctor: "The follow-up can be reviewed in the context of the earlier findings and treatment. All four source records stay available for inspection.", question: "What does the full sequence suggest we should investigate next?" },
 ];
-
-const DISEASES: { id: Disease; label: string; y: number }[] = [
-  { id: "gastro", label: "Gastroenteritis", y: 74 },
-  { id: "app", label: "Acute appendicitis", y: 162 },
-  { id: "mes", label: "Mesenteric adenitis", y: 250 },
-];
-
-// presents_with edges, as in the shared knowledge graph
-const EDGES: [Disease, Phenotype][] = [
-  ["app", "navel"], ["app", "rlq"], ["app", "nausea"], ["app", "anorexia"], ["app", "fever"], ["app", "wbc"],
-  ["gastro", "navel"], ["gastro", "nausea"], ["gastro", "diarrhea"], ["gastro", "fever"],
-  ["mes", "navel"], ["mes", "rlq"], ["mes", "fever"],
-];
-
-type Step = {
-  time: string;
-  note: string;
-  present: Phenotype[];
-  absent: Phenotype[];
-  scores: Record<Disease, number>;
-  sequence: number;
-  question: string;
-  gain: number;
-};
-
-// Illustrative numbers for a synthetic case, not model output.
-const STEPS: Step[] = [
-  {
-    time: "Day 0, 08:00",
-    note: "Pain started around the navel this morning.",
-    present: ["navel"],
-    absent: [],
-    scores: { gastro: 0.41, app: 0.32, mes: 0.27 },
-    sequence: 0.31,
-    question: "Has the pain moved since it started?",
-    gain: 0.41,
-  },
-  {
-    time: "Day 0, 14:00",
-    note: "Pain has moved to the lower right abdomen.",
-    present: ["rlq"],
-    absent: [],
-    scores: { app: 0.58, mes: 0.25, gastro: 0.17 },
-    sequence: 0.68,
-    question: "Any diarrhea or vomiting?",
-    gain: 0.29,
-  },
-  {
-    time: "Day 0, 18:00",
-    note: "Nauseous, no appetite. Denies diarrhea.",
-    present: ["nausea", "anorexia"],
-    absent: ["diarrhea"],
-    scores: { app: 0.62, mes: 0.26, gastro: 0.12 },
-    sequence: 0.84,
-    question: "What are the temperature and white cell count?",
-    gain: 0.36,
-  },
-  {
-    time: "Day 1, 07:00",
-    note: "Temperature 38.4 °C. White cell count high.",
-    present: ["fever", "wbc"],
-    absent: [],
-    scores: { app: 0.71, mes: 0.20, gastro: 0.09 },
-    sequence: 0.92,
-    question: "Is there rebound tenderness or pain on coughing?",
-    gain: 0.34,
-  },
-];
-
-const PX = 184; // phenotype column right edge
-const DX = 294; // disease column left edge
+const POINTS = [[82,68],[248,68],[82,244],[248,244]];
 
 export default function CaseDemo() {
-  const [count, setCount] = useState(1);
-  const shown = STEPS.slice(0, count);
-  const current = STEPS[count - 1];
-  const present = new Set(shown.flatMap((s) => s.present));
-  const absent = new Set(shown.flatMap((s) => s.absent));
-  const fresh = new Set([...current.present, ...current.absent]);
-  const ranked = DISEASES.map((d) => ({ ...d, score: current.scores[d.id] })).sort((a, b) => b.score - a.score);
-  const label = (id: Disease) => DISEASES.find((d) => d.id === id)!.label;
-
-  return (
-    <div className="case">
-      <div className="case-grid">
-        <div className="case-col">
-          <h3>Patient timeline</h3>
-          <ol className="timeline">
-            {shown.map((s, i) => (
-              <li key={s.time} className={i === count - 1 ? "is-new" : undefined}>
-                <time>{s.time}</time>
-                <span>{s.note}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="case-col case-graph">
-          <h3>Linked to the knowledge graph</h3>
-          <svg viewBox="0 0 474 324" role="img" aria-label="Findings linked to symptoms in the knowledge graph, connected to three candidate diseases">
-            {EDGES.map(([d, p]) => {
-              const py = PHENOTYPES.find((x) => x.id === p)!.y;
-              const dy = DISEASES.find((x) => x.id === d)!.y;
-              const state = present.has(p) ? "on" : absent.has(p) ? "neg" : "off";
-              return <line key={d + p} x1={PX} y1={py} x2={DX} y2={dy} className={`edge ${state}`} />;
-            })}
-            {PHENOTYPES.map((p) => {
-              const state = present.has(p.id) ? "on" : absent.has(p.id) ? "neg" : "off";
-              return (
-                <g key={p.id} className={`node ph ${state} ${fresh.has(p.id) ? "fresh" : ""}`}>
-                  <rect x={0} y={p.y - 15} width={PX} height={30} rx={15} />
-                  <text x={PX / 2} y={p.y + 5}>{p.label}</text>
-                </g>
-              );
-            })}
-            {DISEASES.map((d) => (
-              <g key={d.id} className={`node dx ${d.id === ranked[0].id ? "lead" : ""}`}>
-                <rect x={DX} y={d.y - 17} width={180} height={34} rx={17} />
-                <text x={DX + 90} y={d.y + 5}>{d.label}</text>
-              </g>
-            ))}
-          </svg>
-          <p className="legend">
-            <span className="k on" /> present <span className="k neg" /> documented as absent <span className="k off" /> not yet seen
-          </p>
-        </div>
-
-        <div className="case-col" aria-live="polite">
-          <h3>Clinician differential</h3>
-          <ul className="ddx">
-            {ranked.map((d, i) => (
-              <li key={d.id} className={i === 0 ? "lead" : undefined}>
-                <div className="ddx-row">
-                  <span>{d.label}</span>
-                  <b>{Math.round(d.score * 100)}%</b>
-                </div>
-                <div className="bar"><i style={{ width: `${d.score * 100}%` }} /></div>
-              </li>
-            ))}
-          </ul>
-          <p className="seq">
-            Timeline matches the typical sequence for {label("app").toLowerCase()}: <b>{Math.round(current.sequence * 100)}%</b>
-          </p>
-          <div className="nbq">
-            <span>Next best question</span>
-            <p>{current.question}</p>
-            <small>Expected information gain {current.gain.toFixed(2)}</small>
-          </div>
-        </div>
-      </div>
-
-      <div className="case-actions">
-        <button type="button" className="btn primary" onClick={() => setCount(count + 1)} disabled={count === STEPS.length}>
-          {count === STEPS.length ? "All findings added" : "Add the next finding"}
-        </button>
-        <button type="button" className="ghost" onClick={() => setCount(1)} disabled={count === 1}>
-          Start over
-        </button>
-        <span className="case-note">Synthetic case with illustrative numbers. Finding {count} of {STEPS.length}.</span>
-      </div>
+  const [count,setCount] = useState(1);
+  const [view,setView] = useState<"patient" | "doctor">("patient");
+  const [source,setSource] = useState<number | null>(null);
+  const current = RECORDS[count-1];
+  return <div className="walkthrough">
+    <div className="walkthrough-bar"><span className="example-label"><span/> Example walkthrough</span><span>Fictional records · Interactive preview</span></div>
+    <div className="walkthrough-grid">
+      <div className="walkthrough-timeline"><p className="visual-label">One person&apos;s history</p><ol>{RECORDS.slice(0,count).map((record,i)=><li key={record.date} className={i===count-1 ? "current" : ""}><time>{record.date}</time><h3>{record.title}</h3><p>{record.note}</p><button onClick={()=>setSource(source===i ? null : i)} aria-expanded={source===i} aria-controls="example-source">{source===i ? "Close source" : "View source"}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 3h10l4 4v14H5V3Zm9 0v6h5M8 13h8M8 17h5"/></svg></button></li>)}</ol></div>
+      <div className="walkthrough-graph"><p className="visual-label">The connected record</p><svg viewBox="0 0 330 310" role="img" aria-label={`${count} fictional records connected to one timeline`}>
+        {POINTS.map(([x,y],i)=><g key={i} className={i<count ? "record-connected" : "record-pending"}><path d={`M${x} ${y} Q165 ${y} 165 156`}/><circle cx={x} cy={y} r="20"/><text x={x} y={y+4}>{String(i+1).padStart(2,"0")}</text><text className="record-name" x={x} y={y+(y<100 ? -34 : 38)}>{["Visit","Results","Medication","Follow-up"][i]}</text></g>)}
+        <circle className="timeline-core" cx="165" cy="156" r="36"/><text className="timeline-core-text" x="165" y="153">One</text><text className="timeline-core-text" x="165" y="170">timeline</text>
+      </svg><p>Each connection keeps its source.</p></div>
+      <div className="walkthrough-reader"><div className="view-switch" aria-label="Choose the example view"><button aria-pressed={view==="patient"} onClick={()=>setView("patient")}>Patient view</button><button aria-pressed={view==="doctor"} onClick={()=>setView("doctor")}>Doctor view</button></div><div className="reader-copy" aria-live="polite"><p className="visual-label">{view==="patient" ? "Your history, explained" : "Context for clinical review"}</p><p>{current[view]}</p>{view==="doctor" && <div className="review-question"><span>Question to explore</span><p>{current.question}</p></div>}</div></div>
     </div>
-  );
+    <div id="example-source" className="example-source" hidden={source===null}>{source!==null && <><span className="visual-label">Fictional source · {RECORDS[source].source} · {RECORDS[source].date}</span><p>{RECORDS[source].note}</p></>}</div>
+    <div className="walkthrough-controls"><button className="pill" disabled={count===RECORDS.length} onClick={()=>{setCount(count+1);setSource(null);}}>{count===RECORDS.length ? "History connected" : "Add the next record"}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button><button className="ghost" disabled={count===1} onClick={()=>{setCount(1);setSource(null);}}>Start over</button><span aria-live="polite">{count} of {RECORDS.length} records connected</span></div>
+  </div>;
 }

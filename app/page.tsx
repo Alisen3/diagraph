@@ -56,9 +56,9 @@ export default function Home() {
       </section>
 
       <section id="how" data-scene="how" className="wrap agents-section">
-        <div className="agent-intro"><div className="section-heading reveal"><p className="label">How it works</p><h2><Words text="Specialist agents. One connected graph." /></h2><p className="body">DiaGraph will bring together agents to reason over your history, follow changes over time and find new evidence. They work on the same sourced graph. Clinicians review and approve additions.</p></div><div className="scene-slot" data-visual="graph" aria-hidden="true"/></div>
+        <div className="agent-intro"><div className="section-heading reveal"><p className="label">How it works</p><h2><Words text="Specialist agents. One connected graph." /></h2><p className="body">DiaGraph will bring together agents to reason over your history, follow changes over time and find new evidence. They will work on the same sourced graph. Clinicians will review and approve additions.</p></div><div className="scene-slot" data-visual="graph" aria-hidden="true"/></div>
         <AgentGraph />
-        <div className="source-strip"><p className="label">Built on established knowledge</p><div className="source-links">{KNOWLEDGE.map(([name,url])=><a key={name} href={url} target="_blank" rel="noreferrer">{name}<Arrow diagonal /></a>)}</div><div className="dataset-row"><span>Developed with synthetic data</span>{DATASETS.map(([name,url])=><a key={name} href={url} target="_blank" rel="noreferrer">{name}<Arrow diagonal /></a>)}</div></div>
+        <div className="source-strip"><p className="label">Building on established knowledge</p><div className="source-links">{KNOWLEDGE.map(([name,url])=><a key={name} href={url} target="_blank" rel="noreferrer">{name}<Arrow diagonal /></a>)}</div><div className="dataset-row"><span>Developed with synthetic data</span>{DATASETS.map(([name,url])=><a key={name} href={url} target="_blank" rel="noreferrer">{name}<Arrow diagonal /></a>)}</div></div>
       </section>
 
       <section id="research" data-scene="measure" className="wrap research-section">

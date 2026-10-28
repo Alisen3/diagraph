@@ -5,8 +5,8 @@ import * as THREE from "three";
 
 // surface patches; amber is kept for the rim so outlines glow warm. Light theme swaps in darker inks.
 const PALETTES = {
-  dark: { patches: ["#ffffff", "#c9b8ff", "#8052ff", "#2fd3b0", "#a98bff"], bg: 0x000000, rim: [1, 0.72, 0.16], hover: [1, 1, 1], line: 0.55 },
-  light: { patches: ["#1b1340", "#5b3fd9", "#8052ff", "#0f8a74", "#3a2a8a"], bg: 0xffffff, rim: [0.85, 0.5, 0], hover: [0.05, 0.05, 0.1], line: 0.35 },
+  dark: { patches: ["#ffffff", "#c9b8ff", "#8052ff", "#2fd3b0", "#a98bff"], bg: 0x000000, rim: [1, 0.72, 0.16], hover: [1, 1, 1], head: [1, 1, 1], line: 0.55 },
+  light: { patches: ["#1b1340", "#5b3fd9", "#8052ff", "#0f8a74", "#3a2a8a"], bg: 0xffffff, rim: [0.85, 0.5, 0], hover: [0.05, 0.05, 0.1], head: [0.5, 0.32, 1], line: 0.35 },
 };
 type Theme = keyof typeof PALETTES;
 const COLORS = PALETTES.dark.patches;
@@ -115,22 +115,23 @@ type Pose = {
   w: [number, number, number]; // weight of brain, body, graph
   explode: number; x: number; y: number; rotY: number; rotX: number; scale: number;
   fade: number; // overall opacity, lowered where interactive content sits on top
+  pulse: number; // light travelling along the graph's edges
 };
 const P = (w: Pose["w"], explode: number, x: number, rotY: number, scale: number, extra: Partial<Pose> = {}): Pose =>
-  ({ w, explode, x, y: 0, rotY, rotX: 0.15, scale, fade: 1, ...extra });
+  ({ w, explode, x, y: 0, rotY, rotX: 0.15, scale, fade: 1, pulse: 0, ...extra });
 const BRAIN: Pose["w"] = [1, 0, 0], BODYW: Pose["w"] = [0, 1, 0], GRAPH: Pose["w"] = [0, 0, 1];
 
 // Each section marks itself with data-scene; the scene settles into its pose when that section is centred.
 const POSES: Record<string, Pose> = {
-  hero: P(BRAIN, 0, 0, 0.55, 1),
-  intro: P(BRAIN, 0.15, 0, -0.35, 1, { fade: 0 }),
-  patients: P(BODYW, 0, 0, 0.15, 1, { rotX: 0.02 }),
-  clinicians: P(GRAPH, 0, 0, -0.12, 1, { rotX: 0.04 }),
+  hero: P(BRAIN, 0, 0, 0.55, 1.35),
+  intro: P(BRAIN, 0.15, 0, -0.35, 1),
+  patients: P(BODYW, 0, 0, 0.15, 1.3, { rotX: 0.02 }),
+  clinicians: P(GRAPH, 0, 0, -0.12, 1.25, { rotX: 0.04 }),
   case: P(GRAPH, 0.2, 0, 0, 1, { fade: 0 }),
-  how: P(GRAPH, 0, 0, 0.12, 1, { rotX: 0.03 }),
+  how: P(GRAPH, 0, 0, 0.12, 1.25, { rotX: 0.03, pulse: 1 }),
   measure: P(GRAPH, 0.15, 0, 0, 1, { fade: 0 }),
   team: P(BRAIN, 0.15, 0, -0.4, 1, { fade: 0 }),
-  closing: P(BRAIN, 0, 0, 0.55, 1),
+  closing: P(BRAIN, 0, 0, 0.55, 1.25),
 };
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -140,11 +141,14 @@ function blend(a: Pose, b: Pose, t: number): Pose {
   const s = smooth(t);
   // scattering starts slowly and gathering finishes early
   const te = b.explode > a.explode ? t * t * t : 1 - (1 - t) ** 3;
+  // a change of shape dissolves and reforms instead of morphing through a blob; the swap happens while scattered
+  const morph = a.w.some((v, i) => v !== b.w[i]);
+  const sw = morph ? smooth(s) : s;
   return {
-    w: [mix(a.w[0], b.w[0], s), mix(a.w[1], b.w[1], s), mix(a.w[2], b.w[2], s)],
-    explode: mix(a.explode, b.explode, te),
+    w: [mix(a.w[0], b.w[0], sw), mix(a.w[1], b.w[1], sw), mix(a.w[2], b.w[2], sw)],
+    explode: Math.max(mix(a.explode, b.explode, te), morph ? Math.sin(Math.PI * t) * 0.6 : 0),
     x: mix(a.x, b.x, s), y: mix(a.y, b.y, s), rotY: mix(a.rotY, b.rotY, s), rotX: mix(a.rotX, b.rotX, s),
-    scale: mix(a.scale, b.scale, s), fade: mix(a.fade, b.fade, s),
+    scale: mix(a.scale, b.scale, s), fade: mix(a.fade, b.fade, s), pulse: mix(a.pulse, b.pulse, s),
   };
 }
 
@@ -228,7 +232,35 @@ const fragment = /* glsl */ `
       float distance = length(max(delta, 0.0));
       visibility *= smoothstep(0.0, 72.0, distance);
     }
+  #ifdef PULSE
+    float glow = smoothstep(0.5, 0.0, length(gl_PointCoord - 0.5));
+    gl_FragColor = vec4(vColor, glow * glow * vAlpha * uFade * visibility);
+  #else
     gl_FragColor = vec4(vColor, vAlpha * uFade * visibility);
+  #endif
+  }
+`;
+
+// Agents at work: comets that run along the graph's edges, each drawn as a head and a fading tail.
+const pulseVertex = /* glsl */ `
+  attribute vec3 aFrom;
+  attribute vec3 aTo;
+  attribute vec3 aPulse; // phase, speed, tail index
+  uniform float uTime;
+  uniform float uDpr;
+  uniform vec3 uRim;
+  uniform vec3 uHead;
+  varying vec3 vColor;
+  varying float vAlpha;
+  void main() {
+    float p = fract(uTime * aPulse.y + aPulse.x) * 1.2 - aPulse.z * 0.03;
+    vec4 mv = modelViewMatrix * vec4(mix(aFrom, aTo, clamp(p, 0.0, 1.0)), 1.0);
+    gl_Position = projectionMatrix * mv;
+    float tail = 1.0 - aPulse.z / 6.0;
+    gl_PointSize = (4.0 + 14.0 * tail * tail) * uDpr;
+    // fade in as it leaves a node and out as it arrives; rest a moment before the next run
+    vAlpha = step(0.0, p) * step(p, 1.0) * sin(clamp(p, 0.0, 1.0) * 3.14159) * tail;
+    vColor = mix(uRim, uHead, 0.75 * tail * tail);
   }
 `;
 
@@ -282,7 +314,7 @@ export default function ParticleScene() {
       uMouse: { value: new THREE.Vector2(9, 9) }, uDelta: { value: new THREE.Vector2() }, uAspect: { value: 1 }, uFade: { value: 1 },
       uDpr: { value: renderer.getPixelRatio() },
       uClearRects: { value: Array.from({ length: 16 }, () => new THREE.Vector4()) }, uClearCount: { value: 0 },
-      uRim: { value: new THREE.Vector3() }, uHover: { value: new THREE.Vector3() },
+      uRim: { value: new THREE.Vector3() }, uHover: { value: new THREE.Vector3() }, uHead: { value: new THREE.Vector3() },
     };
     const makeMaterial = (u: typeof uniforms) => new THREE.ShaderMaterial({
       vertexShader: vertex, fragmentShader: fragment, uniforms: u, transparent: true, depthWrite: false,
@@ -338,6 +370,27 @@ export default function ParticleScene() {
     const lineMat = makeMaterial(lineUniforms);
     group.add(new THREE.LineSegments(lineGeo, lineMat));
 
+    // three comets per edge, leaving the central record outwards; elsewhere in either direction
+    const TAIL = 6;
+    const comets = LINKS.flatMap(([i, j]) => [0, 1, 2].map((n) => {
+      const out = i === 0 || Math.random() < 0.5;
+      return { from: CLUSTERS[out ? i : j].p, to: CLUSTERS[out ? j : i].p, phase: n / 3 + Math.random() * 0.2, speed: 0.12 + Math.random() * 0.1 };
+    }));
+    const pulseGeo = new THREE.BufferGeometry();
+    const each = (f: (c: (typeof comets)[number], k: number) => number[]) => new Float32Array(comets.flatMap((c) => Array.from({ length: TAIL }, (_, k) => f(c, k)).flat()));
+    pulseGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(comets.length * TAIL * 3), 3));
+    pulseGeo.setAttribute("aFrom", new THREE.BufferAttribute(each((c) => c.from), 3));
+    pulseGeo.setAttribute("aTo", new THREE.BufferAttribute(each((c) => c.to), 3));
+    pulseGeo.setAttribute("aPulse", new THREE.BufferAttribute(each((c, k) => [c.phase, c.speed, k]), 3));
+    const pulseUniforms = { ...uniforms, uFade: { value: 0 } };
+    const pulseMat = new THREE.ShaderMaterial({
+      vertexShader: pulseVertex, fragmentShader: fragment, uniforms: pulseUniforms, defines: { PULSE: "" },
+      transparent: true, depthWrite: false,
+    });
+    const pulses = new THREE.Points(pulseGeo, pulseMat);
+    pulses.frustumCulled = false; // positions are computed in the shader
+    group.add(pulses);
+
 
     const applyTheme = () => {
       const theme: Theme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
@@ -349,6 +402,7 @@ export default function ParticleScene() {
       lineColor.needsUpdate = true;
       uniforms.uRim.value.fromArray(p.rim);
       uniforms.uHover.value.fromArray(p.hover);
+      uniforms.uHead.value.fromArray(p.head);
       if (still) tick(0);
     };
     const themeWatch = new MutationObserver(applyTheme);
@@ -371,21 +425,25 @@ export default function ParticleScene() {
     const onScroll = () => {
       const pixelsPerUnit = h / (2 * Math.tan(THREE.MathUtils.degToRad(20)) * 6);
       const y = window.scrollY;
-      const keys = Array.from(document.querySelectorAll<HTMLElement>("[data-scene]")).flatMap((el) => {
+      const keys: { at: number; pose: Pose }[] = [];
+      for (const el of document.querySelectorAll<HTMLElement>("[data-scene]")) {
         const base = POSES[el.dataset.scene!];
-        if (!base) return [];
+        if (!base) continue;
         const slot = el.querySelector<HTMLElement>(".scene-slot");
         const rect = (slot ?? el).getBoundingClientRect();
-        const centerX = slot ? rect.left + rect.width / 2 : w * .75;
         const centerY = slot ? rect.top + rect.height / 2 : rect.top + Math.min(rect.height / 2, h / 2);
-        const pose: Pose = {
-          ...base, w: [...base.w],
-          x: (centerX - w / 2) / pixelsPerUnit,
-          y: (h / 2 - centerY) / pixelsPerUnit,
-          scale: slot ? Math.min(rect.width, rect.height) * .36 / pixelsPerUnit : .6,
-        };
-        return [{ at: el.dataset.scene === "hero" ? 0 : centerY + y - h / 2, pose }];
-      });
+        const pose: Pose = { ...base, w: [...base.w] };
+        const prev = keys.at(-1)?.pose;
+        if (slot) {
+          pose.x = (rect.left + rect.width / 2 - w / 2) / pixelsPerUnit;
+          pose.y = (h / 2 - centerY) / pixelsPerUnit;
+          pose.scale = Math.min(rect.width, rect.height) * .36 / pixelsPerUnit * base.scale; // base.scale: size within the slot
+        } else if (prev) {
+          // no illustration here: stay with the last one and scroll away with it rather than shrink to a dot
+          Object.assign(pose, { x: prev.x, y: prev.y, scale: prev.scale });
+        }
+        keys.push({ at: el.dataset.scene === "hero" ? 0 : centerY + y - h / 2, pose });
+      }
       if (!keys.length) return;
       let pose = keys[keys.length - 1].pose;
       for (let i = 0; i < keys.length - 1; i++) {
@@ -423,7 +481,7 @@ export default function ParticleScene() {
     const tick = (now: number) => {
       // ease toward the scroll pose so movement feels weighted
       const k = still || pausedRef.current ? 1 : 1 - Math.exp(-Math.min(now - previous || 16, 50) / 110);
-      for (const key of ["explode", "x", "y", "rotY", "rotX", "scale", "fade"] as const) state[key] += (target[key] - state[key]) * k;
+      for (const key of ["explode", "x", "y", "rotY", "rotX", "scale", "fade", "pulse"] as const) state[key] += (target[key] - state[key]) * k;
       for (let i = 0; i < 3; i++) state.w[i] += (target.w[i] - state.w[i]) * k;
       if (!still && !pausedRef.current) sway = { y: sway.y + (tiltY - sway.y) * 0.05, x: sway.x + (tiltX - sway.x) * 0.05 };
 
@@ -446,6 +504,8 @@ export default function ParticleScene() {
       if (!still) uniforms.uFade.value = dim;
       // the brain's network only belongs to the brain, and would streak once scattered
       lineUniforms.uFade.value = 0.5 * state.w[0] ** 4 * Math.max(0, 1 - state.explode * 2.5) * dim;
+      // motion, so hidden for reduced motion; only on a gathered graph
+      pulseUniforms.uFade.value = still ? 0 : state.pulse * state.w[2] ** 4 * Math.max(0, 1 - state.explode * 2.5) * dim;
 
       group.position.set(state.x, state.y, 0);
       group.scale.setScalar(state.scale);
@@ -494,7 +554,7 @@ export default function ParticleScene() {
       window.removeEventListener("scroll", onScrollFrame);
       window.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerleave", onLeave);
-      geo.dispose(); lineGeo.dispose(); tetra.dispose(); material.dispose(); lineMat.dispose();
+      geo.dispose(); lineGeo.dispose(); pulseGeo.dispose(); tetra.dispose(); material.dispose(); lineMat.dispose(); pulseMat.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };

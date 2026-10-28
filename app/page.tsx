@@ -68,7 +68,7 @@ export default function Home() {
 
       <section id="team" data-scene="team" className="wrap team-section"><div className="section-heading reveal"><p className="label">The people behind DiaGraph</p><h2><Words text="Built with a shared purpose." /></h2></div><TeamCarousel people={TEAM}/></section>
 
-      <section className="wrap closing" data-scene="closing"><div className="closing-copy"><p className="label">One record. Two perspectives.</p><h2>A better understanding<br/><span className="dim">starts with connection.</span></h2><div className="closing-links"><Link className="pill" href="/project">Follow the project <Arrow /></Link><Link className="text-link" href="/privacy">Our approach to privacy <Arrow /></Link></div></div><div className="scene-slot" data-visual="brain" aria-hidden="true"/></section>
+      <section className="wrap closing" data-scene="closing"><div className="closing-copy reveal"><p className="label">One record. Two perspectives.</p><h2><Words text="A better understanding" /><br/><span className="dim"><Words text="starts with connection." /></span></h2><div className="closing-links"><Link className="pill" href="/project">Follow the project <Arrow /></Link><Link className="text-link" href="/privacy">Our approach to privacy <Arrow /></Link></div></div><div className="scene-slot" data-visual="brain" aria-hidden="true"/></section>
     </main>
     <Footer />
   </>;

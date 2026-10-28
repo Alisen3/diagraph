@@ -3,7 +3,7 @@ export const TEAM: [string, string, string?][] = [
   ["Team member", "Bora Balcı", "/team/bora-balci.jpg"],
   ["Team member", "Asya Ünal"],
   ["Team member", "Ali Şen"],
-  ["Team member", "Bilgehan Akın"],
+  ["Team member", "Bilgehan Akın", "/team/bilgehan-akin.jpg"],
   ["Supervisor", "Cevdet Aykanat"],
   ["Innovation expert", "Can Koyuncu", "/team/can-koyuncu.jpg"],
 ];

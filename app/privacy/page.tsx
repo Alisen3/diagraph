@@ -1,0 +1,13 @@
+import type { Metadata } from "next";
+import { Header, Footer } from "../site-chrome";
+export const metadata: Metadata = { title: "Privacy by design — DiaGraph", description: "Our approach to patient consent, sourced information and responsible development." };
+export default function Privacy() {
+  return <><Header/><main className="wrap document-page"><header><p className="label">Our approach to privacy</p><h1>Your history.<br/><span className="dim">Your control.</span></h1><p className="document-lead">Health information deserves care at every step. We&apos;re building DiaGraph around consent, traceable information and clear boundaries between patient and clinician views.</p></header><div className="document-sections">
+    <section><span className="section-number">01</span><div><h2>Start with synthetic data.</h2><p>Development and evaluation use synthetic records and hand-written notes. Real patient data is not needed for the research prototype. This website does not offer health-record uploads or clinical services.</p></div></section>
+    <section><span className="section-number">02</span><div><h2>Access through consent.</h2><p>The product is being built for time-limited patient consent before a clinician can access the full record and reasoning. Access rules and an audit trail are planned at the database level.</p></div></section>
+    <section><span className="section-number">03</span><div><h2>Two views, with clear boundaries.</h2><p>Patients will see their own history in plain language, with sources they can check. Ranked diagnoses and high-risk links are reserved for the clinician view. Clinicians remain responsible for decisions about care.</p></div></section>
+    <section><span className="section-number">04</span><div><h2>Trace every connection.</h2><p>Findings retain their source text. Uncertain information waits for review, and proposed additions to the medical graph require supporting evidence and clinician approval.</p></div></section>
+    <section><span className="section-number">05</span><div><h2>Review before real-world use.</h2><p>Privacy and medical-device requirements are part of the research plan, including legal review with the law faculty. These are design commitments for a product in development, not a claim of regulatory approval or certification.</p></div></section>
+    <section><span className="section-number">06</span><div><h2>This website.</h2><p>The theme toggle saves your light or dark preference in your browser. Links to external resources take you to websites with their own privacy practices.</p><p>This page describes our approach to development. A policy covering the eventual health-data service will be needed before that service launches.</p></div></section>
+  </div></main><Footer/></>;
+}

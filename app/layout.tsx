@@ -13,9 +13,9 @@ if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches
 d.dataset.theme=t;d.classList.add('js');history.scrollRestoration='manual'})()`;
 
 export const metadata: Metadata = {
-  title: "DiaGraph: a medical knowledge graph for patients and clinicians",
+  title: "DiaGraph: one causal medical knowledge graph for patients and doctors",
   description:
-    "DiaGraph turns health records into a timeline of findings linked to sourced medical knowledge. CS491 Senior Design Project, Bilkent University.",
+    "One connected health record for patients and doctors. DiaGraph is bringing health history, sourced medical knowledge and causal reasoning together.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

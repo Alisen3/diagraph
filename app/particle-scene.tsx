@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 // surface patches; amber is kept for the rim so outlines glow warm. Light theme swaps in darker inks.
 const PALETTES = {
-  dark: { patches: ["#ffffff", "#c9b8ff", "#8052ff", "#2fd3b0", "#a98bff"], bg: 0x000000, rim: [1, 0.72, 0.16], hover: [1, 1, 1], line: 0.55 },
-  light: { patches: ["#1b1340", "#5b3fd9", "#8052ff", "#0f8a74", "#3a2a8a"], bg: 0xffffff, rim: [0.85, 0.5, 0], hover: [0.05, 0.05, 0.1], line: 0.35 },
+  dark: { patches: ["#ffffff", "#c9b8ff", "#8052ff", "#2fd3b0", "#a98bff"], bg: 0x000000, rim: [1, 0.72, 0.16], hover: [1, 1, 1], head: [1, 1, 1], line: 0.55 },
+  light: { patches: ["#1b1340", "#5b3fd9", "#8052ff", "#0f8a74", "#3a2a8a"], bg: 0xffffff, rim: [0.85, 0.5, 0], hover: [0.05, 0.05, 0.1], head: [0.5, 0.32, 1], line: 0.35 },
 };
 type Theme = keyof typeof PALETTES;
 const COLORS = PALETTES.dark.patches;
-const BRAIN_LABELS = ["Acute appendicitis", "Fever", "Nausea", "Leukocytosis", "Abdominal pain", "Gastroenteritis", "Peritonitis", "Type 2 diabetes"];
 const NODES = 110;
 
 /* ---------- shapes, each roughly in a [-1, 1] box, y up, facing +z ---------- */
@@ -84,13 +83,13 @@ function sampleBody(count: number) {
 
 // A knowledge graph: concept clusters and the edges between them.
 const CLUSTERS = [
-  { label: "Acute appendicitis", p: [0, 0.05, 0.1], r: 0.2 },
-  { label: "Abdominal pain", p: [-0.75, 0.45, 0.2], r: 0.14 },
-  { label: "Fever", p: [-0.6, -0.55, -0.2], r: 0.13 },
-  { label: "Nausea", p: [0.15, 0.8, -0.3], r: 0.12 },
-  { label: "Leukocytosis", p: [0.75, -0.5, 0.25], r: 0.13 },
-  { label: "Gastroenteritis", p: [0.8, 0.45, -0.1], r: 0.16 },
-  { label: "Peritonitis", p: [0.1, -0.85, -0.25], r: 0.12 },
+  { label: "Health history", p: [0, 0.05, 0.1], r: 0.2 },
+  { label: "Visits", p: [-0.75, 0.45, 0.2], r: 0.14 },
+  { label: "Results", p: [-0.6, -0.55, -0.2], r: 0.13 },
+  { label: "Findings", p: [0.15, 0.8, -0.3], r: 0.12 },
+  { label: "Medications", p: [0.75, -0.5, 0.25], r: 0.13 },
+  { label: "Sources", p: [0.8, 0.45, -0.1], r: 0.16 },
+  { label: "Follow-up", p: [0.1, -0.85, -0.25], r: 0.12 },
 ];
 const LINKS = [[0, 1], [0, 2], [0, 3], [0, 4], [0, 6], [0, 5], [5, 1], [5, 2], [5, 3], [1, 3], [2, 6], [4, 6]];
 
@@ -115,26 +114,24 @@ function sampleGraph(count: number) {
 type Pose = {
   w: [number, number, number]; // weight of brain, body, graph
   explode: number; x: number; y: number; rotY: number; rotX: number; scale: number;
-  pain: number; // 0 pain at the navel, 1 moved to the lower right abdomen
   fade: number; // overall opacity, lowered where interactive content sits on top
+  pulse: number; // light travelling along the graph's edges
 };
 const P = (w: Pose["w"], explode: number, x: number, rotY: number, scale: number, extra: Partial<Pose> = {}): Pose =>
-  ({ w, explode, x, y: 0, rotY, rotX: 0.15, scale, pain: 0, fade: 1, ...extra });
+  ({ w, explode, x, y: 0, rotY, rotX: 0.15, scale, fade: 1, pulse: 0, ...extra });
 const BRAIN: Pose["w"] = [1, 0, 0], BODYW: Pose["w"] = [0, 1, 0], GRAPH: Pose["w"] = [0, 0, 1];
 
 // Each section marks itself with data-scene; the scene settles into its pose when that section is centred.
 const POSES: Record<string, Pose> = {
-  hero: P(BRAIN, 0, 1.75, 0.55, 1.45),
-  intro: P(BRAIN, 0.35, 1.9, -0.8, 1.35), // turns away first, then starts to come apart
-  patients: P(BODYW, 0, -2.2, 0.3, 1.5, { rotX: 0.02 }),
-  clinicians: P(BODYW, 0, 2.2, -0.3, 1.5, { rotX: 0.02, pain: 1 }),
-  case: P(BODYW, 1, 0, 0, 1.5, { pain: 1, fade: 0.2 }), // stays quiet behind the case demo
-  how: P(GRAPH, 0, 2.1, 0.4, 1.25),
-  privacy: P(GRAPH, 0, -2.1, -0.5, 1.3),
-  measure: P(GRAPH, 0.9, 0, 0, 1.3, { fade: 0.2 }), // stays quiet behind the metrics
-  plan: P(BODYW, 0, -2.2, 0.5, 1.45, { rotX: 0.02 }),
-  team: P(BODYW, 1, 0, 0, 1.45),
-  closing: P(BRAIN, 0, 1.75, 0.55, 1.45),
+  hero: P(BRAIN, 0, 0, 0.55, 1.35),
+  intro: P(BRAIN, 0.15, 0, -0.35, 1),
+  patients: P(BODYW, 0, 0, 0.15, 1.3, { rotX: 0.02 }),
+  clinicians: P(GRAPH, 0, 0, -0.12, 1.25, { rotX: 0.04 }),
+  case: P(GRAPH, 0.2, 0, 0, 1, { fade: 0 }),
+  how: P(GRAPH, 0, 0, 0.12, 1.25, { rotX: 0.03, pulse: 1 }),
+  measure: P(GRAPH, 0.15, 0, 0, 1, { fade: 0 }),
+  team: P(BRAIN, 0.15, 0, -0.4, 1, { fade: 0 }),
+  closing: P(BRAIN, 0, 0, 0.55, 1.25),
 };
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -144,11 +141,14 @@ function blend(a: Pose, b: Pose, t: number): Pose {
   const s = smooth(t);
   // scattering starts slowly and gathering finishes early
   const te = b.explode > a.explode ? t * t * t : 1 - (1 - t) ** 3;
+  // a change of shape dissolves and reforms instead of morphing through a blob; the swap happens while scattered
+  const morph = a.w.some((v, i) => v !== b.w[i]);
+  const sw = morph ? smooth(s) : s;
   return {
-    w: [mix(a.w[0], b.w[0], s), mix(a.w[1], b.w[1], s), mix(a.w[2], b.w[2], s)],
-    explode: mix(a.explode, b.explode, te),
+    w: [mix(a.w[0], b.w[0], sw), mix(a.w[1], b.w[1], sw), mix(a.w[2], b.w[2], sw)],
+    explode: Math.max(mix(a.explode, b.explode, te), morph ? Math.sin(Math.PI * t) * 0.6 : 0),
     x: mix(a.x, b.x, s), y: mix(a.y, b.y, s), rotY: mix(a.rotY, b.rotY, s), rotX: mix(a.rotX, b.rotX, s),
-    scale: mix(a.scale, b.scale, s), pain: mix(a.pain, b.pain, s), fade: mix(a.fade, b.fade, s),
+    scale: mix(a.scale, b.scale, s), fade: mix(a.fade, b.fade, s), pulse: mix(a.pulse, b.pulse, s),
   };
 }
 
@@ -184,7 +184,7 @@ const vertex = /* glsl */ `
     // each particle leaves at its own moment, so shapes crumble instead of fading
     float e = smoothstep(aRand.x * 0.7, aRand.x * 0.7 + 0.3, uExplode);
     vec3 c = mix(shape, aScatter, e);
-    float t = uTime * uMotion;
+    float t = uTime;
     c += vec3(sin(t * .6 + aRand.y * 6.28), cos(t * .5 + aRand.z * 6.28), sin(t * .4 + aRand.w * 6.28)) * (0.012 + e * 0.12);
 
     vec4 mv = modelViewMatrix * vec4(c, 1.0);
@@ -194,7 +194,7 @@ const vertex = /* glsl */ `
     // near the cursor particles stir in place and get flung along the pointer's motion; nothing is pushed out
     float near = smoothstep(0.3, 0.0, length(d)) * (1.0 - e) * uMotion;
     vec2 stir = vec2(sin(uTime * (2.0 + aRand.y * 4.0) + aRand.z * 6.28), cos(uTime * (2.0 + aRand.y * 4.0) + aRand.w * 6.28));
-    mv.xy += near * (stir * (0.08 + aRand.z * 0.16) + uDelta * (0.5 + aRand.y * 1.5));
+    mv.xy += near * (stir * (0.018 + aRand.z * 0.03) + uDelta * (0.08 + aRand.y * 0.15));
 
     // brighter, warmer rim where the surface turns away from the viewer
     vec3 nShape = normalize(aBrain / vec3(1.0, 0.7, 0.66)) * uW.x
@@ -218,29 +218,67 @@ const fragment = /* glsl */ `
   uniform float uFade;
   varying vec3 vColor;
   varying float vAlpha;
-  void main() { gl_FragColor = vec4(vColor, vAlpha * uFade); }
+  uniform float uDpr;
+  uniform vec4 uClearRects[16];
+  uniform int uClearCount;
+  void main() {
+    // Dim particles behind readable content with a feather, so shapes still pass behind text.
+    vec2 pixel = gl_FragCoord.xy / uDpr;
+    float visibility = 1.0;
+    for (int i = 0; i < 16; i++) {
+      if (i >= uClearCount) break;
+      vec4 rect = uClearRects[i];
+      vec2 delta = abs(pixel - rect.xy) - rect.zw;
+      float distance = length(max(delta, 0.0));
+      visibility *= mix(0.25, 1.0, smoothstep(0.0, 72.0, distance));
+    }
+  #ifdef PULSE
+    float glow = smoothstep(0.5, 0.0, length(gl_PointCoord - 0.5));
+    gl_FragColor = vec4(vColor, glow * glow * vAlpha * uFade * visibility);
+  #else
+    gl_FragColor = vec4(vColor, vAlpha * uFade * visibility);
+  #endif
+  }
 `;
 
-function label(host: HTMLElement, text: string, className = "node-label") {
-  const el = document.createElement("span");
-  el.className = className;
-  el.textContent = text;
-  host.appendChild(el);
-  return el;
-}
+// Agents at work: comets that run along the graph's edges, each drawn as a head and a fading tail.
+const pulseVertex = /* glsl */ `
+  attribute vec3 aFrom;
+  attribute vec3 aTo;
+  attribute vec3 aPulse; // phase, speed, tail index
+  uniform float uTime;
+  uniform float uDpr;
+  uniform vec3 uRim;
+  uniform vec3 uHead;
+  varying vec3 vColor;
+  varying float vAlpha;
+  void main() {
+    float p = fract(uTime * aPulse.y + aPulse.x) * 1.2 - aPulse.z * 0.03;
+    vec4 mv = modelViewMatrix * vec4(mix(aFrom, aTo, clamp(p, 0.0, 1.0)), 1.0);
+    gl_Position = projectionMatrix * mv;
+    float tail = 1.0 - aPulse.z / 6.0;
+    gl_PointSize = (4.0 + 14.0 * tail * tail) * uDpr;
+    // fade in as it leaves a node and out as it arrives; rest a moment before the next run
+    vAlpha = step(0.0, p) * step(p, 1.0) * sin(clamp(p, 0.0, 1.0) * 3.14159) * tail;
+    vColor = mix(uRim, uHead, 0.75 * tail * tail);
+  }
+`;
 
 export default function ParticleScene() {
   const ref = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     const host = ref.current!;
     const mobile = window.innerWidth < 760;
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let still = motionPreference.matches;
     const COUNT = mobile ? 2400 : 4200;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 1);
+    renderer.setClearColor(0x000000, 0);
     host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -272,9 +310,11 @@ export default function ParticleScene() {
 
     const uniforms = {
       uTime: { value: 0 }, uExplode: { value: 0 }, uW: { value: new THREE.Vector3(1, 0, 0) },
-      uMotion: { value: still ? 0 : 1 }, uSize: { value: 0.03 },
+      uMotion: { value: still ? 0 : 1 }, uSize: { value: 0.015 },
       uMouse: { value: new THREE.Vector2(9, 9) }, uDelta: { value: new THREE.Vector2() }, uAspect: { value: 1 }, uFade: { value: 1 },
-      uRim: { value: new THREE.Vector3() }, uHover: { value: new THREE.Vector3() },
+      uDpr: { value: renderer.getPixelRatio() },
+      uClearRects: { value: Array.from({ length: 16 }, () => new THREE.Vector4()) }, uClearCount: { value: 0 },
+      uRim: { value: new THREE.Vector3() }, uHover: { value: new THREE.Vector3() }, uHead: { value: new THREE.Vector3() },
     };
     const makeMaterial = (u: typeof uniforms) => new THREE.ShaderMaterial({
       vertexShader: vertex, fragmentShader: fragment, uniforms: u, transparent: true, depthWrite: false,
@@ -330,23 +370,39 @@ export default function ParticleScene() {
     const lineMat = makeMaterial(lineUniforms);
     group.add(new THREE.LineSegments(lineGeo, lineMat));
 
-    // HTML overlays stay crisp: brain node names, graph cluster names, and the patient's pain point
-    const brainLabels = BRAIN_LABELS.map((t) => label(host, t));
-    const graphLabels = CLUSTERS.map((cl) => label(host, cl.label));
-    const pain = label(host, "", "pain-marker");
-    const painText = document.createElement("span");
-    pain.append(document.createElement("i"), painText);
+    // three comets per edge, leaving the central record outwards; elsewhere in either direction
+    const TAIL = 6;
+    const comets = LINKS.flatMap(([i, j]) => [0, 1, 2].map((n) => {
+      const out = i === 0 || Math.random() < 0.5;
+      return { from: CLUSTERS[out ? i : j].p, to: CLUSTERS[out ? j : i].p, phase: n / 3 + Math.random() * 0.2, speed: 0.12 + Math.random() * 0.1 };
+    }));
+    const pulseGeo = new THREE.BufferGeometry();
+    const each = (f: (c: (typeof comets)[number], k: number) => number[]) => new Float32Array(comets.flatMap((c) => Array.from({ length: TAIL }, (_, k) => f(c, k)).flat()));
+    pulseGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(comets.length * TAIL * 3), 3));
+    pulseGeo.setAttribute("aFrom", new THREE.BufferAttribute(each((c) => c.from), 3));
+    pulseGeo.setAttribute("aTo", new THREE.BufferAttribute(each((c) => c.to), 3));
+    pulseGeo.setAttribute("aPulse", new THREE.BufferAttribute(each((c, k) => [c.phase, c.speed, k]), 3));
+    const pulseUniforms = { ...uniforms, uFade: { value: 0 } };
+    const pulseMat = new THREE.ShaderMaterial({
+      vertexShader: pulseVertex, fragmentShader: fragment, uniforms: pulseUniforms, defines: { PULSE: "" },
+      transparent: true, depthWrite: false,
+    });
+    const pulses = new THREE.Points(pulseGeo, pulseMat);
+    pulses.frustumCulled = false; // positions are computed in the shader
+    group.add(pulses);
+
 
     const applyTheme = () => {
       const theme: Theme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
       const p = PALETTES[theme];
-      renderer.setClearColor(p.bg, 1);
+      renderer.setClearColor(p.bg, 0);
       colorAttr.copyArray(color[theme]);
       colorAttr.needsUpdate = true;
       lineColor.copyArray(new Float32Array(ends.length * 3).fill(p.line));
       lineColor.needsUpdate = true;
       uniforms.uRim.value.fromArray(p.rim);
       uniforms.uHover.value.fromArray(p.hover);
+      uniforms.uHead.value.fromArray(p.head);
       if (still) tick(0);
     };
     const themeWatch = new MutationObserver(applyTheme);
@@ -364,24 +420,49 @@ export default function ParticleScene() {
       uniforms.uAspect.value = w / h;
     };
 
+    // Layout is measured on scroll/resize, never once per particle or render frame.
+    // The same object travels between actual illustration space in the document.
     const onScroll = () => {
-      // keyframes: the scroll position at which each marked section is centred
-      const keys = Array.from(document.querySelectorAll<HTMLElement>("[data-scene]")).map((el, i) => {
-        const r = el.getBoundingClientRect();
-        return { at: i === 0 ? 0 : r.top + window.scrollY + r.height / 2 - h / 2, pose: POSES[el.dataset.scene!] };
-      }).filter((k) => k.pose);
+      const pixelsPerUnit = h / (2 * Math.tan(THREE.MathUtils.degToRad(20)) * 6);
       const y = window.scrollY;
+      const keys: { at: number; pose: Pose }[] = [];
+      for (const el of document.querySelectorAll<HTMLElement>("[data-scene]")) {
+        const base = POSES[el.dataset.scene!];
+        if (!base) continue;
+        const slot = el.querySelector<HTMLElement>(".scene-slot");
+        const rect = (slot ?? el).getBoundingClientRect();
+        const centerY = slot ? rect.top + rect.height / 2 : rect.top + Math.min(rect.height / 2, h / 2);
+        const pose: Pose = { ...base, w: [...base.w] };
+        const prev = keys.at(-1)?.pose;
+        if (slot) {
+          pose.x = (rect.left + rect.width / 2 - w / 2) / pixelsPerUnit;
+          pose.y = (h / 2 - centerY) / pixelsPerUnit;
+          pose.scale = Math.min(rect.width, rect.height) * .36 / pixelsPerUnit * base.scale; // base.scale: size within the slot
+        } else if (prev) {
+          // no illustration here: stay with the last one and scroll away with it rather than shrink to a dot
+          Object.assign(pose, { x: prev.x, y: prev.y, scale: prev.scale });
+        }
+        keys.push({ at: el.dataset.scene === "hero" ? 0 : centerY + y - h / 2, pose });
+      }
+      if (!keys.length) return;
       let pose = keys[keys.length - 1].pose;
       for (let i = 0; i < keys.length - 1; i++) {
-        if (y < keys[i + 1].at) { pose = blend(keys[i].pose, keys[i + 1].pose, Math.max(0, (y - keys[i].at) / (keys[i + 1].at - keys[i].at))); break; }
+        if (y < keys[i + 1].at) {
+          pose = blend(keys[i].pose, keys[i + 1].pose, THREE.MathUtils.clamp((y - keys[i].at) / Math.max(1, keys[i + 1].at - keys[i].at), 0, 1));
+          break;
+        }
       }
       Object.assign(target, pose);
-      if (w < 760) {
-        // phones: centred behind the text and dimmer, except the hero where it sits above the headline
-        target.x = 0;
-        target.y = y < h * 0.5 ? 0.85 : 0;
-        target.scale = pose.scale * 0.6;
+
+      // A broad transparent feather is a safety margin during the travel between columns.
+      const readable = document.querySelectorAll<HTMLElement>(".nav,.hero-copy,.art-caption,.scroll-cue,.intro-section,.block,.walkthrough-section,.agent-intro .section-heading,.agent-workspace,.source-strip,.research-section,.team-section,.closing-copy,.foot");
+      let count = 0;
+      for (const el of readable) {
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom < -72 || rect.top > h + 72 || count === 16) continue;
+        uniforms.uClearRects.value[count++].set(rect.left + rect.width / 2, h - rect.top - rect.height / 2, rect.width / 2 + 12, rect.height / 2 + 12);
       }
+      uniforms.uClearCount.value = count;
     };
 
     let tiltX = 0, tiltY = 0;
@@ -392,24 +473,22 @@ export default function ParticleScene() {
     };
     const onLeave = () => uniforms.uMouse.value.set(9, 9);
 
-    const v = new THREE.Vector3();
-    const place = (el: HTMLElement, x: number, y: number, z: number, opacity: number, dx = 10, dy = -7) => {
-      v.set(x, y, z).applyMatrix4(group.matrixWorld).project(camera);
-      el.style.opacity = String(Math.max(0, opacity));
-      el.style.transform = `translate(${((v.x + 1) / 2) * w + dx}px, ${((1 - v.y) / 2) * h + dy}px)`;
-    };
     const lastMouse = new THREE.Vector2(9, 9);
     const motion = new THREE.Vector2();
     let sway = { y: 0, x: 0 };
 
+    let elapsed = 0, previous = 0;
     const tick = (now: number) => {
       // ease toward the scroll pose so movement feels weighted
-      const k = still ? 1 : 0.06;
-      for (const key of ["explode", "x", "y", "rotY", "rotX", "scale", "pain", "fade"] as const) state[key] += (target[key] - state[key]) * k;
+      const k = still || pausedRef.current ? 1 : 1 - Math.exp(-Math.min(now - previous || 16, 50) / 110);
+      for (const key of ["explode", "x", "y", "rotY", "rotX", "scale", "fade", "pulse"] as const) state[key] += (target[key] - state[key]) * k;
       for (let i = 0; i < 3; i++) state.w[i] += (target.w[i] - state.w[i]) * k;
-      sway = { y: sway.y + (tiltY - sway.y) * 0.05, x: sway.x + (tiltX - sway.x) * 0.05 };
+      if (!still && !pausedRef.current) sway = { y: sway.y + (tiltY - sway.y) * 0.05, x: sway.x + (tiltX - sway.x) * 0.05 };
 
-      const t = now / 1000;
+      if (!pausedRef.current && !still) elapsed += Math.min(now-previous,50)/1000;
+      previous = now;
+      const t = elapsed;
+      uniforms.uMotion.value = still || pausedRef.current ? 0 : 1;
       uniforms.uTime.value = t;
       // pointer velocity, smoothed and decaying, in view-space units
       const m = uniforms.uMouse.value;
@@ -420,11 +499,13 @@ export default function ParticleScene() {
 
       uniforms.uW.value.set(state.w[0], state.w[1], state.w[2]);
       if (still) uniforms.uFade.value = (1 - state.explode * 0.8) * state.fade;
-      else uniforms.uExplode.value = state.explode;
-      const dim = (w < 760 && window.scrollY > h * 0.5 ? 0.3 : 1) * state.fade;
+      uniforms.uExplode.value = still ? 0 : state.explode;
+      const dim = state.fade;
       if (!still) uniforms.uFade.value = dim;
       // the brain's network only belongs to the brain, and would streak once scattered
       lineUniforms.uFade.value = 0.5 * state.w[0] ** 4 * Math.max(0, 1 - state.explode * 2.5) * dim;
+      // motion, so hidden for reduced motion; only on a gathered graph
+      pulseUniforms.uFade.value = still ? 0 : state.pulse * state.w[2] ** 4 * Math.max(0, 1 - state.explode * 2.5) * dim;
 
       group.position.set(state.x, state.y, 0);
       group.scale.setScalar(state.scale);
@@ -433,26 +514,25 @@ export default function ParticleScene() {
       renderer.render(scene, camera);
       group.updateMatrixWorld();
 
-      const settled = Math.max(0, 1 - state.explode * 4);
-      brainLabels.forEach((el, i) => {
-        const n = nodes[i];
-        place(el, brainPts[n * 3], brainPts[n * 3 + 1], brainPts[n * 3 + 2], settled * state.w[0] ** 6);
-      });
-      graphLabels.forEach((el, i) => {
-        const p = CLUSTERS[i].p;
-        place(el, p[0], p[1] + CLUSTERS[i].r + 0.04, p[2], settled * state.w[2] ** 6, -20, -18);
-      });
-      // pain starts around the navel and moves to the lower right abdomen (the patient's right is our left)
-      place(pain, mix(0, -0.11, state.pain), mix(0.02, -0.1, state.pain), 0.13, settled * state.w[1] ** 6, -9, -9);
-      pain.classList.toggle("flip", state.x > 0);
-      const text = state.pain < 0.5 ? "Day 0, 08:00 · pain around the navel" : "Day 0, 14:00 · pain moves to the lower right";
-      if (painText.textContent !== text) painText.textContent = text;
-
-      if (!still) raf = requestAnimationFrame(tick);
+      if (!still && !document.hidden) raf = requestAnimationFrame(tick);
     };
 
     const onScrollFrame = () => { onScroll(); if (still) tick(0); };
     const onResize = () => { resize(); onScrollFrame(); };
+    const onMotionChange = () => {
+      still = motionPreference.matches;
+      cancelAnimationFrame(raf);
+      onScroll();
+      raf = requestAnimationFrame(tick);
+    };
+    const onVisibility = () => {
+      cancelAnimationFrame(raf);
+      if (!document.hidden) { previous = performance.now(); raf = requestAnimationFrame(tick); }
+    };
+    const layoutObserver = new ResizeObserver(onResize);
+    layoutObserver.observe(document.querySelector("main")!);
+    motionPreference.addEventListener("change", onMotionChange);
+    document.addEventListener("visibilitychange", onVisibility);
     resize();
     onScroll();
     applyTheme();
@@ -467,16 +547,18 @@ export default function ParticleScene() {
     return () => {
       cancelAnimationFrame(raf);
       themeWatch.disconnect();
+      layoutObserver.disconnect();
+      motionPreference.removeEventListener("change", onMotionChange);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScrollFrame);
       window.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerleave", onLeave);
-      [...brainLabels, ...graphLabels, pain].forEach((el) => el.remove());
-      geo.dispose(); lineGeo.dispose(); tetra.dispose(); material.dispose(); lineMat.dispose();
+      geo.dispose(); lineGeo.dispose(); pulseGeo.dispose(); tetra.dispose(); material.dispose(); lineMat.dispose(); pulseMat.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
   }, []);
 
-  return <div ref={ref} className="brain-scene" aria-hidden="true" />;
+  return <><div ref={ref} className="brain-scene" aria-hidden="true" /><button className="motion-control" aria-pressed={paused} onClick={() => { pausedRef.current = !paused; setPaused(!paused); }}>{paused ? "Play motion" : "Pause motion"}</button></>;
 }

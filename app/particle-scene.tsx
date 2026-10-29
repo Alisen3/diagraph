@@ -222,7 +222,7 @@ const fragment = /* glsl */ `
   uniform vec4 uClearRects[16];
   uniform int uClearCount;
   void main() {
-    // Clear space around readable content with a feather, never an opaque rectangle.
+    // Dim particles behind readable content with a feather, so shapes still pass behind text.
     vec2 pixel = gl_FragCoord.xy / uDpr;
     float visibility = 1.0;
     for (int i = 0; i < 16; i++) {
@@ -230,7 +230,7 @@ const fragment = /* glsl */ `
       vec4 rect = uClearRects[i];
       vec2 delta = abs(pixel - rect.xy) - rect.zw;
       float distance = length(max(delta, 0.0));
-      visibility *= smoothstep(0.0, 72.0, distance);
+      visibility *= mix(0.25, 1.0, smoothstep(0.0, 72.0, distance));
     }
   #ifdef PULSE
     float glow = smoothstep(0.5, 0.0, length(gl_PointCoord - 0.5));
@@ -310,7 +310,7 @@ export default function ParticleScene() {
 
     const uniforms = {
       uTime: { value: 0 }, uExplode: { value: 0 }, uW: { value: new THREE.Vector3(1, 0, 0) },
-      uMotion: { value: still ? 0 : 1 }, uSize: { value: 0.012 },
+      uMotion: { value: still ? 0 : 1 }, uSize: { value: 0.015 },
       uMouse: { value: new THREE.Vector2(9, 9) }, uDelta: { value: new THREE.Vector2() }, uAspect: { value: 1 }, uFade: { value: 1 },
       uDpr: { value: renderer.getPixelRatio() },
       uClearRects: { value: Array.from({ length: 16 }, () => new THREE.Vector4()) }, uClearCount: { value: 0 },
